@@ -1,7 +1,7 @@
 import React from 'react';
 import { GraduationCap, Heart, ShieldAlert, Send, Globe, Mail } from 'lucide-react';
 
-export default function Footer({ onOpenDocs, onOpenNewsletter }) {
+export default function Footer({ onOpenDocs, onOpenNewsletter, onOpenAdmin }) {
   return (
     <footer className="bg-slate-900 text-slate-400 text-xs border-t border-slate-800 mt-16 pt-10 pb-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
@@ -88,7 +88,14 @@ export default function Footer({ onOpenDocs, onOpenNewsletter }) {
           <div className="flex items-center space-x-1 whitespace-nowrap">
             <span>Built with</span>
             <Heart className="w-3 h-3 text-rose-500 fill-rose-500" />
-            <span>for Indian Aspirants • VIDYASUDDHI © 2026</span>
+            <span>for Indian Aspirants • </span>
+            <button
+              onClick={onOpenAdmin}
+              className="hover:text-amber-400 transition-colors cursor-pointer"
+              title="Admin"
+            >
+              VIDYASUDDHI © 2026
+            </button>
           </div>
         </div>
       </div>

@@ -1,21 +1,22 @@
 import React, { useState } from 'react';
-import { X, UserPlus, LogIn, CheckCircle2, User, Mail, Phone, Calendar, GraduationCap, BookOpen, Clock } from 'lucide-react';
+import { X, CheckCircle2, User, Mail, Phone, GraduationCap, AlertTriangle } from 'lucide-react';
 
 export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, onLogout }) {
   const [mode, setMode] = useState('register'); // 'login' | 'register'
   
   // Login State
   const [loginEmail, setLoginEmail] = useState('');
+  const [loginError, setLoginError] = useState('');
   
-  // Registration State (Support all education levels: 10th, 12th, Diploma, Degree, PG)
+  // Registration State
   const [formData, setFormData] = useState({
     fullName: '',
     dob: '',
     email: '',
     phone: '',
-    educationLevel: 'B.E. / B.Tech', // 10th Pass, 12th Pass, Diploma / ITI, B.E. / B.Tech, Degree (B.Sc/B.Com/B.A), Post Graduate
-    studyArea: 'Computer Science & Engineering', // e.g. MPC, BiPC, CSE, IT, ECE, Mechanical, Commerce, General
-    currentYear: '3rd Year', // 1st Year, 2nd Year, 3rd Year, Final Year, Passed Out / Job Seeker
+    educationLevel: 'B.E. / B.Tech',
+    studyArea: 'Computer Science & Engineering',
+    currentYear: '3rd Year',
     passingYear: '2026',
   });
 
@@ -23,9 +24,37 @@ export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, 
 
   if (!isOpen) return null;
 
+  // Get all registered users from localStorage
+  const getRegisteredUsers = () => {
+    try {
+      return JSON.parse(localStorage.getItem('vidyasuddhi_registered_users') || '[]');
+    } catch {
+      return [];
+    }
+  };
+
+  // Save a new user to the registered users list
+  const saveRegisteredUser = (userProfile) => {
+    const existing = getRegisteredUsers();
+    // Don't duplicate emails
+    if (!existing.find(u => u.email === userProfile.email)) {
+      existing.push(userProfile);
+      localStorage.setItem('vidyasuddhi_registered_users', JSON.stringify(existing));
+    }
+  };
+
   const handleRegisterSubmit = (e) => {
     e.preventDefault();
     if (!formData.fullName || !formData.email) return;
+
+    // Check if email already registered
+    const existingUsers = getRegisteredUsers();
+    if (existingUsers.find(u => u.email.toLowerCase() === formData.email.toLowerCase())) {
+      setLoginError('This email is already registered. Please Sign In instead.');
+      setMode('login');
+      setLoginEmail(formData.email);
+      return;
+    }
 
     const newUserProfile = {
       id: `user-${Date.now()}`,
@@ -34,8 +63,11 @@ export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, 
       createdAt: new Date().toISOString()
     };
 
+    // Save to registered users list
+    saveRegisteredUser(newUserProfile);
     onRegister(newUserProfile);
-    setSuccessMsg('Account Created Successfully! Welcome to EduPath.');
+    setSuccessMsg('Account Created Successfully! Welcome to VIDYASUDDHI.');
+    setLoginError('');
     setTimeout(() => {
       setSuccessMsg('');
       onClose();
@@ -46,19 +78,18 @@ export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, 
     e.preventDefault();
     if (!loginEmail) return;
 
-    const existingUser = {
-      id: `user-existing`,
-      fullName: loginEmail.split('@')[0],
-      email: loginEmail,
-      phone: '+91 9876543210',
-      educationLevel: 'B.E. / B.Tech',
-      studyArea: 'Computer Science & Engg',
-      currentYear: '3rd Year',
-      passingYear: '2026',
-      isLoggedIn: true
-    };
+    // Look up the email in registered users
+    const existingUsers = getRegisteredUsers();
+    const foundUser = existingUsers.find(u => u.email.toLowerCase() === loginEmail.toLowerCase());
 
-    onLogin(existingUser);
+    if (!foundUser) {
+      setLoginError('No account found with this email. Please Register first.');
+      return;
+    }
+
+    // Login with the real registered profile
+    onLogin({ ...foundUser, isLoggedIn: true });
+    setLoginError('');
     setSuccessMsg('Logged In Successfully!');
     setTimeout(() => {
       setSuccessMsg('');
@@ -72,7 +103,7 @@ export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, 
       <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Header */}
-        <div className="p-6 bg-gradient-to-r from-indigo-600 via-indigo-700 to-emerald-600 text-white relative flex-shrink-0">
+        <div className="p-6 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white relative flex-shrink-0">
           <button
             onClick={onClose}
             className="absolute top-5 right-5 p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
@@ -81,12 +112,12 @@ export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, 
           </button>
 
           <div className="flex items-center space-x-2 mb-1">
-            <GraduationCap className="w-6 h-6 text-emerald-300" />
+            <GraduationCap className="w-6 h-6 text-amber-200" />
             <h3 className="text-xl font-extrabold">
-              {user ? 'My Student Profile' : (mode === 'register' ? 'Create Free Student Account' : 'Student Login')}
+              {user ? 'My Student Profile' : (mode === 'register' ? 'Create Free Student Account' : 'Sign In to VIDYASUDDHI')}
             </h3>
           </div>
-          <p className="text-xs text-indigo-100">
+          <p className="text-xs text-amber-100">
             For 10th, 12th, Diploma, B.Tech, and Degree Students across India.
           </p>
         </div>
@@ -94,13 +125,13 @@ export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, 
         {/* User Already Logged In View */}
         {user ? (
           <div className="p-6 space-y-5 overflow-y-auto flex-1 text-slate-800 dark:text-slate-200 text-xs">
-            <div className="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 flex items-center space-x-3">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white font-extrabold text-lg flex items-center justify-center shadow-md">
+            <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 flex items-center space-x-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-600 text-white font-extrabold text-lg flex items-center justify-center shadow-md">
                 {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
               </div>
               <div>
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white">{user.fullName}</h4>
-                <p className="text-slate-500">{user.email} | {user.phone}</p>
+                <p className="text-slate-500">{user.email} {user.phone ? `| ${user.phone}` : ''}</p>
                 <span className="inline-block mt-1 px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[10px]">
                   🎓 {user.educationLevel} ({user.studyArea})
                 </span>
@@ -134,26 +165,34 @@ export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, 
             {/* Mode Switcher Pills */}
             <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl mb-5">
               <button
-                onClick={() => setMode('register')}
+                onClick={() => { setMode('register'); setLoginError(''); }}
                 className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
                   mode === 'register'
-                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                    ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-sm'
                     : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
                 Register (Free)
               </button>
               <button
-                onClick={() => setMode('login')}
+                onClick={() => { setMode('login'); setLoginError(''); }}
                 className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
                   mode === 'login'
-                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                    ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-sm'
                     : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
                 Sign In
               </button>
             </div>
+
+            {/* Error Message */}
+            {loginError && (
+              <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs font-semibold flex items-center space-x-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                <span>{loginError}</span>
+              </div>
+            )}
 
             {successMsg ? (
               <div className="py-10 text-center space-y-2">
@@ -215,7 +254,7 @@ export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, 
                   </div>
                 </div>
 
-                {/* Education Qualification (Supports 10th, 12th, Diploma, ITI, Degree, BTech) */}
+                {/* Education Level */}
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Current Highest Education Standard / Level *
@@ -240,7 +279,7 @@ export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, 
                     <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Branch / Study Stream</label>
                     <input
                       type="text"
-                      placeholder="e.g. Computer Science, MPC, ECE, General"
+                      placeholder="e.g. Computer Science, MPC, ECE"
                       value={formData.studyArea}
                       onChange={(e) => setFormData({ ...formData, studyArea: e.target.value })}
                       className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
@@ -267,7 +306,7 @@ export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, 
                 {/* Submit */}
                 <button
                   type="submit"
-                  className="w-full py-3 mt-2 rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-700 hover:to-emerald-700 text-white font-bold shadow-md shadow-indigo-600/20"
+                  className="w-full py-3 mt-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold shadow-md shadow-amber-600/20"
                 >
                   Create Account & View Matched Jobs
                 </button>
@@ -279,23 +318,30 @@ export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, 
               /* Sign In Form */
               <form onSubmit={handleLoginSubmit} className="space-y-4 text-xs py-2">
                 <div>
-                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Email ID</label>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Registered Email ID</label>
                   <input
                     type="email"
                     required
-                    placeholder="student@gmail.com"
+                    placeholder="Enter the email you registered with"
                     value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
+                    onChange={(e) => { setLoginEmail(e.target.value); setLoginError(''); }}
                     className="w-full p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md"
+                  className="w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-md"
                 >
-                  Sign In To Student Portal
+                  Sign In To VIDYASUDDHI
                 </button>
+
+                <p className="text-center text-slate-500 text-[11px]">
+                  Don't have an account?{' '}
+                  <button type="button" onClick={() => { setMode('register'); setLoginError(''); }} className="text-amber-600 font-bold hover:underline">
+                    Register for Free
+                  </button>
+                </p>
               </form>
 
             )}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import StatsBanner from './components/StatsBanner';
@@ -37,11 +37,11 @@ export default function App() {
     return saved ? JSON.parse(saved) : null;
   });
 
-  // User Role Switcher ('student' | 'admin')
-  const [userRole, setUserRole] = useState(() => {
-    const saved = localStorage.getItem('vidyasuddhi_user_role');
-    return saved || 'student';
-  });
+  // User Role (admin access is now password-protected via AdminModal)
+  const [userRole, setUserRole] = useState('student');
+
+  // Ref for scrolling to results on search
+  const resultsRef = useRef(null);
 
   // Telegram & WhatsApp Official Links State
   const [telegramLink, setTelegramLink] = useState(() => {
@@ -90,10 +90,7 @@ export default function App() {
     localStorage.setItem('vidyasuddhi_dark_mode', JSON.stringify(darkMode));
   }, [darkMode]);
 
-  // Persist User Role
-  useEffect(() => {
-    localStorage.setItem('vidyasuddhi_user_role', userRole);
-  }, [userRole]);
+
 
   // Persist User Profile
   useEffect(() => {
@@ -135,9 +132,12 @@ export default function App() {
     localStorage.setItem('vidyasuddhi_custom_opportunities', JSON.stringify([newOpportunity, ...currentCustom]));
   };
 
-  // Quick Tag Select Handler
+  // Quick Tag Select Handler + auto-scroll to results
   const handleSelectQuickFilter = (query) => {
     setSearchKeyword(query);
+    setTimeout(() => {
+      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   // Reset Filters Handler
@@ -275,7 +275,7 @@ export default function App() {
             />
 
             {/* Opportunities Cards Grid */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+            <div id="results-grid" ref={resultsRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
               
               {filteredOpportunities.length === 0 ? (
                 <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm">
@@ -318,6 +318,7 @@ export default function App() {
       <Footer
         onOpenDocs={() => setIsDocsOpen(true)}
         onOpenNewsletter={() => setIsNewsletterOpen(true)}
+        onOpenAdmin={() => setIsAdminOpen(true)}
       />
 
       {/* Modals & Slide-overs */}
@@ -334,8 +335,6 @@ export default function App() {
         isOpen={isAdminOpen}
         onClose={() => setIsAdminOpen(false)}
         onAddOpportunity={handleAddOpportunity}
-        userRole={userRole}
-        setUserRole={setUserRole}
       />
 
       <AuthModal

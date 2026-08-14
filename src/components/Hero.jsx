@@ -71,7 +71,17 @@ export default function Hero({
             <input
               type="text"
               value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
+              onChange={(e) => {
+                setSearchKeyword(e.target.value);
+                if (e.target.value.length >= 2) {
+                  setTimeout(() => {
+                    const resultsSection = document.getElementById('results-grid');
+                    if (resultsSection) {
+                      resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }, 150);
+                }
+              }}
               placeholder="Search RRB NTPC, SBI PO, SSC, 12th Pass jobs, scholarships..."
               className="w-full py-3.5 px-3 text-sm text-slate-900 dark:text-white bg-transparent outline-none placeholder:text-stone-400"
             />
