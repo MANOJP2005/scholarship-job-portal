@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bookmark, BookmarkCheck, ArrowRight, Award, Briefcase, GraduationCap, Zap, Lock } from 'lucide-react';
+import { Calendar, Bookmark, BookmarkCheck, ArrowRight, Award, Briefcase, GraduationCap, Zap } from 'lucide-react';
 
 export default function OpportunityCard({ item, isBookmarked, onToggleBookmark, onSelect, user }) {
   const calculateDaysLeft = (deadlineStr) => {
@@ -47,14 +47,12 @@ export default function OpportunityCard({ item, isBookmarked, onToggleBookmark, 
               <p className="text-[11px] font-medium text-stone-400 dark:text-slate-500 mt-0.5 line-clamp-1">{item.organization}</p>
             </div>
           </div>
-          {user && (
-            <button onClick={() => onToggleBookmark(item.id)}
-              className={`p-2 rounded-xl border transition-colors flex-shrink-0 ${
-                isBookmarked ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-600 border-amber-200 dark:border-amber-800' : 'bg-stone-50 dark:bg-slate-800/60 text-stone-300 hover:text-stone-500 border-stone-200 dark:border-slate-700'
-              }`}>
-              {isBookmarked ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
-            </button>
-          )}
+          <button onClick={(e) => { e.stopPropagation(); onToggleBookmark(item.id); }}
+            className={`p-2 rounded-xl border transition-colors flex-shrink-0 ${
+              isBookmarked ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-600 border-amber-200 dark:border-amber-800' : 'bg-stone-50 dark:bg-slate-800/60 text-stone-300 hover:text-stone-500 border-stone-200 dark:border-slate-700'
+            }`}>
+            {isBookmarked ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+          </button>
         </div>
 
         <h3 onClick={() => onSelect(item)}
@@ -78,8 +76,7 @@ export default function OpportunityCard({ item, isBookmarked, onToggleBookmark, 
         <div className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${deadlineBadge.cls}`}>{deadlineBadge.text}</div>
         <button onClick={() => onSelect(item)}
           className="inline-flex items-center space-x-1 text-xs font-bold text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 transition-colors">
-          {!user && <Lock className="w-3 h-3 mr-0.5 text-stone-400" />}
-          <span>{user ? 'View & Apply' : 'View Details'}</span><ArrowRight className="w-3.5 h-3.5" />
+          <span>View Details & Apply</span><ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>

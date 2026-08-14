@@ -19,7 +19,7 @@ import { Sparkles } from 'lucide-react';
 export default function App() {
   // Opportunities State (Initial Mock + LocalStorage Custom Admin Posts)
   const [opportunities, setOpportunities] = useState(() => {
-    const saved = localStorage.getItem('edupath_custom_opportunities');
+    const saved = localStorage.getItem('vidyasuddhi_custom_opportunities');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -33,27 +33,27 @@ export default function App() {
 
   // User Profile & Authentication State
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('edupath_user_profile');
+    const saved = localStorage.getItem('vidyasuddhi_user_profile');
     return saved ? JSON.parse(saved) : null;
   });
 
   // User Role Switcher ('student' | 'admin')
   const [userRole, setUserRole] = useState(() => {
-    const saved = localStorage.getItem('edupath_user_role');
+    const saved = localStorage.getItem('vidyasuddhi_user_role');
     return saved || 'student';
   });
 
   // Telegram & WhatsApp Official Links State
   const [telegramLink, setTelegramLink] = useState(() => {
-    return localStorage.getItem('edupath_tg_link') || 'https://t.me/student_opportunities';
+    return localStorage.getItem('vidyasuddhi_tg_link') || 'https://t.me/student_opportunities';
   });
   const [whatsappLink, setWhatsappLink] = useState(() => {
-    return localStorage.getItem('edupath_wa_link') || 'https://whatsapp.com/channel/student_job_alerts';
+    return localStorage.getItem('vidyasuddhi_wa_link') || 'https://whatsapp.com/channel/student_job_alerts';
   });
 
   // Bookmarks State
   const [bookmarks, setBookmarks] = useState(() => {
-    const saved = localStorage.getItem('edupath_bookmarks');
+    const saved = localStorage.getItem('vidyasuddhi_bookmarks');
     return saved ? JSON.parse(saved) : ['rrb-ntpc-2026', 'jindal-scholarship-2026'];
   });
 
@@ -76,7 +76,7 @@ export default function App() {
 
   // Dark Mode State
   const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('edupath_dark_mode');
+    const saved = localStorage.getItem('vidyasuddhi_dark_mode');
     return saved ? JSON.parse(saved) : true;
   });
 
@@ -87,38 +87,42 @@ export default function App() {
     } else {
       document.documentElement.classList.remove('dark');
     }
-    localStorage.setItem('edupath_dark_mode', JSON.stringify(darkMode));
+    localStorage.setItem('vidyasuddhi_dark_mode', JSON.stringify(darkMode));
   }, [darkMode]);
 
   // Persist User Role
   useEffect(() => {
-    localStorage.setItem('edupath_user_role', userRole);
+    localStorage.setItem('vidyasuddhi_user_role', userRole);
   }, [userRole]);
 
   // Persist User Profile
   useEffect(() => {
     if (user) {
-      localStorage.setItem('edupath_user_profile', JSON.stringify(user));
+      localStorage.setItem('vidyasuddhi_user_profile', JSON.stringify(user));
     } else {
-      localStorage.removeItem('edupath_user_profile');
+      localStorage.removeItem('vidyasuddhi_user_profile');
     }
   }, [user]);
 
   // Persist Bookmarks
   useEffect(() => {
-    localStorage.setItem('edupath_bookmarks', JSON.stringify(bookmarks));
+    localStorage.setItem('vidyasuddhi_bookmarks', JSON.stringify(bookmarks));
   }, [bookmarks]);
 
   // Handle Channel Link Updates
   const handleUpdateChannelLinks = (tg, wa) => {
     setTelegramLink(tg);
     setWhatsappLink(wa);
-    localStorage.setItem('edupath_tg_link', tg);
-    localStorage.setItem('edupath_wa_link', wa);
+    localStorage.setItem('vidyasuddhi_tg_link', tg);
+    localStorage.setItem('vidyasuddhi_wa_link', wa);
   };
 
   // Toggle Bookmark Handler
   const handleToggleBookmark = (id) => {
+    if (!user) {
+      setIsAuthOpen(true);
+      return;
+    }
     setBookmarks(prev => 
       prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
     );
@@ -127,8 +131,8 @@ export default function App() {
   // Add Custom Opportunity via Admin Modal
   const handleAddOpportunity = (newOpportunity) => {
     setOpportunities(prev => [newOpportunity, ...prev]);
-    const currentCustom = JSON.parse(localStorage.getItem('edupath_custom_opportunities') || '[]');
-    localStorage.setItem('edupath_custom_opportunities', JSON.stringify([newOpportunity, ...currentCustom]));
+    const currentCustom = JSON.parse(localStorage.getItem('vidyasuddhi_custom_opportunities') || '[]');
+    localStorage.setItem('vidyasuddhi_custom_opportunities', JSON.stringify([newOpportunity, ...currentCustom]));
   };
 
   // Quick Tag Select Handler
@@ -209,7 +213,13 @@ export default function App() {
         onOpenAuth={() => setIsAuthOpen(true)}
         onOpenAdmin={() => setIsAdminOpen(true)}
         onOpenDocs={() => setIsDocsOpen(true)}
-        onOpenResumeMatcher={() => setIsResumeMatcherOpen(true)}
+        onOpenResumeMatcher={() => {
+          if (!user) {
+            setIsAuthOpen(true);
+          } else {
+            setIsResumeMatcherOpen(true);
+          }
+        }}
         darkMode={darkMode}
         setDarkMode={setDarkMode}
         onOpenBotSimulator={() => setIsBotSimulatorOpen(true)}
@@ -232,7 +242,13 @@ export default function App() {
               searchKeyword={searchKeyword}
               setSearchKeyword={setSearchKeyword}
               onSelectQuickFilter={handleSelectQuickFilter}
-              onOpenResumeMatcher={() => setIsResumeMatcherOpen(true)}
+              onOpenResumeMatcher={() => {
+                if (!user) {
+                  setIsAuthOpen(true);
+                } else {
+                  setIsResumeMatcherOpen(true);
+                }
+              }}
               user={user}
               onOpenAuth={() => setIsAuthOpen(true)}
             />
@@ -310,6 +326,8 @@ export default function App() {
         onClose={() => setSelectedItem(null)}
         isBookmarked={selectedItem ? bookmarks.includes(selectedItem.id) : false}
         onToggleBookmark={handleToggleBookmark}
+        user={user}
+        onOpenAuth={() => setIsAuthOpen(true)}
       />
 
       <AdminModal
