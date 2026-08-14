@@ -124,6 +124,20 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
     setSubmitted('Listing Deleted.');
     setTimeout(() => setSubmitted(''), 1200);
   };
+  
+  const handleShareWhatsApp = () => {
+    const today = new Date().toLocaleDateString('en-GB'); // DD/MM/YYYY format approx
+    const top5 = opportunities.slice(0, 5);
+    let msg = `🎓 *VIDYASUDDHI Updates - ${today}* 🎓\n\n`;
+    top5.forEach((opp, i) => {
+      msg += `${i+1}. *${opp.title}*\n`;
+      msg += `   Type: ${opp.type === 'job' ? '🏛️ Govt Job' : '🎓 Scholarship'}\n`;
+      msg += `   Deadline: ${opp.deadline}\n\n`;
+    });
+    msg += `👉 Apply now at: https://vidyasuddhi.com`;
+    const encoded = encodeURIComponent(msg);
+    window.open(`https://wa.me/?text=${encoded}`, '_blank');
+  };
 
   // Form UI (shared for add & edit)
   const renderForm = () => (
@@ -291,16 +305,22 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
             <div className="space-y-4">
 
               {/* Top Bar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div className="relative flex-1">
                   <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
                   <input type="text" placeholder="Search listings..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs" />
                 </div>
-                <button onClick={openAddForm}
-                  className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-sm whitespace-nowrap">
-                  <PlusCircle className="w-4 h-4" /><span>Add New Listing</span>
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button onClick={handleShareWhatsApp}
+                    className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-xs shadow-sm whitespace-nowrap">
+                    <span>Share Today's Listings on WhatsApp</span>
+                  </button>
+                  <button onClick={openAddForm}
+                    className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-sm whitespace-nowrap">
+                    <PlusCircle className="w-4 h-4" /><span>Add New Listing</span>
+                  </button>
+                </div>
               </div>
 
               <p className="text-[11px] text-slate-500 font-medium">{filteredOpps.length} listing{filteredOpps.length !== 1 ? 's' : ''} total</p>

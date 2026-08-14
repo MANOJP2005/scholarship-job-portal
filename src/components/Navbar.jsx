@@ -3,7 +3,6 @@ import {
   GraduationCap,
   Bookmark,
   PlusCircle,
-  Code,
   Sun,
   Moon,
   Bell,
@@ -25,7 +24,6 @@ export default function Navbar({
   user,
   onOpenAuth,
   onOpenAdmin,
-  onOpenDocs,
   onOpenResumeMatcher,
   darkMode,
   setDarkMode,
@@ -47,7 +45,7 @@ export default function Navbar({
           </div>
           <div>
             <div className="flex items-center space-x-1.5">
-              <span className="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white">
+              <span className="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white font-serif">
                 VIDYASUDDHI
               </span>
             </div>
@@ -117,15 +115,6 @@ export default function Navbar({
           >
             <Bell className="w-4 h-4" />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full animate-pulse ring-2 ring-white dark:ring-slate-900" />
-          </button>
-
-          {/* Dev Setup / Docs Button */}
-          <button
-            onClick={onOpenDocs}
-            title="Developer Documentation & Setup"
-            className="hidden sm:flex p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-          >
-            <Code className="w-4 h-4" />
           </button>
 
           {/* Dark Mode Toggle */}
@@ -212,19 +201,6 @@ export default function Navbar({
                 <span>AI Resume Matcher</span>
               </button>
             )}
-
-
-
-            <button
-              onClick={() => {
-                onOpenDocs();
-                setMobileMenuOpen(false);
-              }}
-              className="w-full text-left py-2.5 px-3 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-stone-50 dark:hover:bg-slate-800 rounded-lg flex items-center space-x-2"
-            >
-              <Code className="w-4 h-4" />
-              <span>Developer Setup & Docs</span>
-            </button>
           </div>
         </div>
       )}

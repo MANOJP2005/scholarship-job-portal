@@ -6,13 +6,13 @@ import FilterBar from './components/FilterBar';
 import OpportunityCard from './components/OpportunityCard';
 import OpportunityModal from './components/OpportunityModal';
 import AdminModal from './components/AdminModal';
-import DeveloperDocsModal from './components/DeveloperDocsModal';
 import NewsletterModal from './components/NewsletterModal';
 import AuthModal from './components/AuthModal';
 import ResumeMatcherModal from './components/ResumeMatcherModal';
 import BotSimulatorModal from './components/BotSimulatorModal';
 import BookmarksView from './components/BookmarksView';
 import Footer from './components/Footer';
+import WhatsAppFloat from './components/WhatsAppFloat';
 import { initialOpportunities } from './data/mockData';
 import { Sparkles } from 'lucide-react';
 
@@ -68,7 +68,6 @@ export default function App() {
   // Modals States
   const [selectedItem, setSelectedItem] = useState(null);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
-  const [isDocsOpen, setIsDocsOpen] = useState(false);
   const [isNewsletterOpen, setIsNewsletterOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isResumeMatcherOpen, setIsResumeMatcherOpen] = useState(false);
@@ -228,7 +227,6 @@ export default function App() {
         user={user}
         onOpenAuth={() => setIsAuthOpen(true)}
         onOpenAdmin={() => setIsAdminOpen(true)}
-        onOpenDocs={() => setIsDocsOpen(true)}
         onOpenResumeMatcher={() => {
           if (!user) {
             setIsAuthOpen(true);
@@ -330,9 +328,11 @@ export default function App() {
 
       </main>
 
+      <WhatsAppFloat />
+
       {/* Footer */}
       <Footer
-        onOpenDocs={() => setIsDocsOpen(true)}
+        onOpenDocs={() => {}}
         onOpenNewsletter={() => setIsNewsletterOpen(true)}
         onOpenAdmin={() => setIsAdminOpen(true)}
       />
@@ -379,11 +379,6 @@ export default function App() {
         telegramLink={telegramLink}
         whatsappLink={whatsappLink}
         onUpdateLinks={handleUpdateChannelLinks}
-      />
-
-      <DeveloperDocsModal
-        isOpen={isDocsOpen}
-        onClose={() => setIsDocsOpen(false)}
       />
 
       <NewsletterModal
