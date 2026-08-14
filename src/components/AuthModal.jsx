@@ -1,30 +1,7 @@
-import React, { useState } from 'react';
-import { X, CheckCircle2, User, Mail, Phone, GraduationCap, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, CheckCircle2, User, Mail, Phone, GraduationCap, AlertTriangle, Eye, EyeOff, Lock, Bookmark, Trash2, Calendar } from 'lucide-react';
 
-export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, onLogout }) {
-  const [mode, setMode] = useState('register'); // 'login' | 'register'
-  
-  // Login State
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginError, setLoginError] = useState('');
-  
-  // Registration State
-  const [formData, setFormData] = useState({
-    fullName: '',
-    dob: '',
-    email: '',
-    phone: '',
-    educationLevel: 'B.E. / B.Tech',
-    studyArea: 'Computer Science & Engineering',
-    currentYear: '3rd Year',
-    passingYear: '2026',
-  });
-
-  const [successMsg, setSuccessMsg] = useState('');
-
-  if (!isOpen) return null;
-
-  // Get all registered users from localStorage
+export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, onLogout, bookmarkedItems = [], onToggleBookmark, onSelectItem }) {
   const getRegisteredUsers = () => {
     try {
       return JSON.parse(localStorage.getItem('vidyasuddhi_registered_users') || '[]');
@@ -33,10 +10,44 @@ export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, 
     }
   };
 
+  const [mode, setMode] = useState('register'); // 'login' | 'register'
+  
+  useEffect(() => {
+    if (isOpen && !user) {
+      const users = getRegisteredUsers();
+      if (users.length > 0) {
+        setMode('login');
+      } else {
+        setMode('register');
+      }
+    }
+  }, [isOpen, user]);
+
+  // Login State
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [loginError, setLoginError] = useState('');
+  
+  // Registration State
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    phone: '',
+    educationLevel: 'B.E. / B.Tech',
+    studyArea: 'Computer Science & Engineering',
+    currentYear: '3rd Year',
+  });
+  const [showRegPassword, setShowRegPassword] = useState(false);
+
+  const [successMsg, setSuccessMsg] = useState('');
+
+  if (!isOpen) return null;
+
   // Save a new user to the registered users list
   const saveRegisteredUser = (userProfile) => {
     const existing = getRegisteredUsers();
-    // Don't duplicate emails
     if (!existing.find(u => u.email === userProfile.email)) {
       existing.push(userProfile);
       localStorage.setItem('vidyasuddhi_registered_users', JSON.stringify(existing));
@@ -45,7 +56,12 @@ export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, 
 
   const handleRegisterSubmit = (e) => {
     e.preventDefault();
-    if (!formData.fullName || !formData.email) return;
+    if (!formData.fullName || !formData.email || !formData.password) return;
+
+    if (formData.password.length < 6) {
+      setLoginError('Password must be at least 6 characters.');
+      return;
+    }
 
     // Check if email already registered
     const existingUsers = getRegisteredUsers();
@@ -65,6 +81,8 @@ export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, 
 
     // Save to registered users list
     saveRegisteredUser(newUserProfile);
+    
+    // Auto-login after registration
     onRegister(newUserProfile);
     setSuccessMsg('Account Created Successfully! Welcome to VIDYASUDDHI.');
     setLoginError('');
@@ -76,14 +94,19 @@ export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, 
 
   const handleLoginSubmit = (e) => {
     e.preventDefault();
-    if (!loginEmail) return;
+    if (!loginEmail || !loginPassword) return;
 
     // Look up the email in registered users
     const existingUsers = getRegisteredUsers();
     const foundUser = existingUsers.find(u => u.email.toLowerCase() === loginEmail.toLowerCase());
 
     if (!foundUser) {
-      setLoginError('No account found with this email. Please Register first.');
+      setLoginError('No account found. Please Register first.');
+      return;
+    }
+
+    if (foundUser.password !== loginPassword) {
+      setLoginError('Incorrect password. Try again.');
       return;
     }
 
@@ -138,15 +161,51 @@ export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, 
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                 <span className="block text-[10px] text-slate-400 font-bold uppercase">Current Status / Year</span>
                 <span className="font-bold text-slate-900 dark:text-white">{user.currentYear}</span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                <span className="block text-[10px] text-slate-400 font-bold uppercase">Passing Year</span>
-                <span className="font-bold text-slate-900 dark:text-white">{user.passingYear}</span>
+            </div>
+
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+              <div className="flex items-center space-x-2 mb-3">
+                <Bookmark className="w-4 h-4 text-amber-600" />
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">My Saved Opportunities</h4>
               </div>
+              {bookmarkedItems.length === 0 ? (
+                <p className="text-slate-500 text-center py-4 bg-slate-50 dark:bg-slate-800 rounded-xl">No saved opportunities yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {bookmarkedItems.map(item => (
+                    <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-amber-300 transition-colors">
+                      <div className="flex-1 min-w-0 pr-3 cursor-pointer" onClick={() => onSelectItem && onSelectItem(item)}>
+                        <h5 className="font-bold text-slate-900 dark:text-white truncate">{item.title}</h5>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                            item.type === 'job' 
+                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' 
+                              : 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
+                          }`}>
+                            {item.type === 'job' ? 'JOB' : 'SCHOLARSHIP'}
+                          </span>
+                          <span className="flex items-center text-slate-500">
+                            <Calendar className="w-3 h-3 mr-1" />
+                            {item.deadline}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onToggleBookmark && onToggleBookmark(item.id); }}
+                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                        title="Remove bookmark"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <button
@@ -154,7 +213,7 @@ export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, 
                 onLogout();
                 onClose();
               }}
-              className="w-full py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs border border-red-200 transition-colors"
+              className="w-full py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs border border-red-200 transition-colors mt-4"
             >
               Log Out of Account
             </button>
@@ -254,6 +313,32 @@ export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, 
                   </div>
                 </div>
 
+                {/* Password */}
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Password * (Min 6 chars)
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <input
+                      type={showRegPassword ? "text" : "password"}
+                      required
+                      minLength={6}
+                      placeholder="Create a password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="w-full pl-9 pr-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => setShowRegPassword(!showRegPassword)}
+                      className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                    >
+                      {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
                 {/* Education Level */}
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -264,12 +349,12 @@ export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, 
                     onChange={(e) => setFormData({ ...formData, educationLevel: e.target.value })}
                     className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium"
                   >
-                    <option value="10th Pass">10th Class Pass (SSC / Secondary)</option>
-                    <option value="12th Pass">12th Class Pass (Inter / Higher Secondary)</option>
-                    <option value="Diploma / ITI">Diploma / ITI Polytechnic</option>
-                    <option value="B.E. / B.Tech">B.E. / B.Tech (Engineering)</option>
-                    <option value="Degree (B.Sc/B.Com/B.A)">Degree (B.Sc / B.Com / B.A / BCA)</option>
-                    <option value="Post Graduate">Post Graduate (M.Tech / M.Sc / MCA / MBA)</option>
+                    <option value="10th Pass">10th Pass</option>
+                    <option value="12th Pass">12th Pass</option>
+                    <option value="Diploma/ITI">Diploma/ITI</option>
+                    <option value="B.E./B.Tech">B.E./B.Tech</option>
+                    <option value="Degree">Degree</option>
+                    <option value="Post Graduate">Post Graduate</option>
                   </select>
                 </div>
 
@@ -319,14 +404,39 @@ export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, 
               <form onSubmit={handleLoginSubmit} className="space-y-4 text-xs py-2">
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Registered Email ID</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="Enter the email you registered with"
-                    value={loginEmail}
-                    onChange={(e) => { setLoginEmail(e.target.value); setLoginError(''); }}
-                    className="w-full p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
-                  />
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <input
+                      type="email"
+                      required
+                      placeholder="Enter the email you registered with"
+                      value={loginEmail}
+                      onChange={(e) => { setLoginEmail(e.target.value); setLoginError(''); }}
+                      className="w-full pl-9 pr-3 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Password</label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <input
+                      type={showLoginPassword ? "text" : "password"}
+                      required
+                      placeholder="Enter your password"
+                      value={loginPassword}
+                      onChange={(e) => { setLoginPassword(e.target.value); setLoginError(''); }}
+                      className="w-full pl-9 pr-10 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => setShowLoginPassword(!showLoginPassword)}
+                      className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                    >
+                      {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
 
                 <button

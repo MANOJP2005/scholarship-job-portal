@@ -10,9 +10,9 @@ import NewsletterModal from './components/NewsletterModal';
 import AuthModal from './components/AuthModal';
 import ResumeMatcherModal from './components/ResumeMatcherModal';
 import BotSimulatorModal from './components/BotSimulatorModal';
-import BookmarksView from './components/BookmarksView';
 import Footer from './components/Footer';
 import WhatsAppFloat from './components/WhatsAppFloat';
+import DeadlineReminder from './components/DeadlineReminder';
 import { initialOpportunities } from './data/mockData';
 import { Sparkles } from 'lucide-react';
 
@@ -58,7 +58,7 @@ export default function App() {
   });
 
   // Navigation & Filter States
-  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'jobs' | 'scholarships' | 'bookmarks'
+  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'jobs' | 'scholarships'
   const [activeTypeTab, setActiveTypeTab] = useState('all'); // 'all' | 'job' | 'scholarship'
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
@@ -78,6 +78,33 @@ export default function App() {
     const saved = localStorage.getItem('vidyasuddhi_dark_mode');
     return saved ? JSON.parse(saved) : true;
   });
+
+  // Deadline Reminders State
+  const [showReminder, setShowReminder] = useState(false);
+  const [reminderItems, setReminderItems] = useState([]);
+
+  // Check for upcoming deadlines
+  useEffect(() => {
+    const checkDeadlines = () => {
+      const now = new Date();
+      const in5Days = new Date();
+      in5Days.setDate(now.getDate() + 5);
+      
+      const upcoming = opportunities.filter(item => {
+        const itemDate = new Date(item.deadline);
+        return itemDate >= now && itemDate <= in5Days;
+      });
+
+      if (upcoming.length > 0) {
+        setReminderItems(upcoming);
+        setTimeout(() => {
+          setShowReminder(true);
+        }, 2000);
+      }
+    };
+    
+    checkDeadlines();
+  }, [opportunities]);
 
   // Dark Mode Sync
   useEffect(() => {
@@ -219,7 +246,6 @@ export default function App() {
       
       {/* Top Navbar */}
       <Navbar
-        bookmarkCount={bookmarks.length}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         userRole={userRole}
@@ -242,89 +268,80 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-grow">
         
-        {activeTab === 'bookmarks' ? (
-          <BookmarksView
-            bookmarkedItems={bookmarkedItemsList}
-            onToggleBookmark={handleToggleBookmark}
-            onSelect={(item) => setSelectedItem(item)}
-            onBackToFeed={() => setActiveTab('all')}
+        <>
+          {/* Hero Section */}
+          <Hero
+            searchKeyword={searchKeyword}
+            setSearchKeyword={setSearchKeyword}
+            onSelectQuickFilter={handleSelectQuickFilter}
+            onOpenResumeMatcher={() => {
+              if (!user) {
+                setIsAuthOpen(true);
+              } else {
+                setIsResumeMatcherOpen(true);
+              }
+            }}
+            user={user}
+            onOpenAuth={() => setIsAuthOpen(true)}
           />
-        ) : (
-          <>
-            {/* Hero Section */}
-            <Hero
-              searchKeyword={searchKeyword}
-              setSearchKeyword={setSearchKeyword}
-              onSelectQuickFilter={handleSelectQuickFilter}
-              onOpenResumeMatcher={() => {
-                if (!user) {
-                  setIsAuthOpen(true);
-                } else {
-                  setIsResumeMatcherOpen(true);
-                }
-              }}
-              user={user}
-              onOpenAuth={() => setIsAuthOpen(true)}
-            />
 
-            {/* Metrics Banner */}
-            <StatsBanner
-              totalCount={opportunities.length}
-              jobCount={jobCount}
-              scholarshipCount={scholarshipCount}
-            />
+          {/* Metrics Banner */}
+          <StatsBanner
+            totalCount={opportunities.length}
+            jobCount={jobCount}
+            scholarshipCount={scholarshipCount}
+          />
 
-            {/* Smart Filters Bar */}
-            <FilterBar
-              activeTypeTab={activeTypeTab}
-              setActiveTypeTab={setActiveTypeTab}
-              selectedCategory={selectedCategory}
-              setSelectedCategory={setSelectedCategory}
-              selectedQualification={selectedQualification}
-              setSelectedQualification={setSelectedQualification}
-              urgencyFilter={urgencyFilter}
-              setUrgencyFilter={setUrgencyFilter}
-              onResetFilters={handleResetFilters}
-              resultCount={filteredOpportunities.length}
-            />
+          {/* Smart Filters Bar */}
+          <FilterBar
+            activeTypeTab={activeTypeTab}
+            setActiveTypeTab={setActiveTypeTab}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+            selectedQualification={selectedQualification}
+            setSelectedQualification={setSelectedQualification}
+            urgencyFilter={urgencyFilter}
+            setUrgencyFilter={setUrgencyFilter}
+            onResetFilters={handleResetFilters}
+            resultCount={filteredOpportunities.length}
+          />
 
-            {/* Opportunities Cards Grid */}
-            <div id="results-grid" ref={resultsRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-              
-              {filteredOpportunities.length === 0 ? (
-                <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm">
-                  <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-slate-400">
-                    <Sparkles className="w-6 h-6 text-amber-500" />
-                  </div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">No Opportunities Match Your Current Search</h3>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto mb-4">
-                    Try clearing your search keyword or switching your qualification filter to "All Qualifications".
-                  </p>
-                  <button
-                    onClick={handleResetFilters}
-                    className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-sm"
-                  >
-                    Reset All Search Filters
-                  </button>
+          {/* Opportunities Cards Grid */}
+          <div id="results-grid" ref={resultsRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+            
+            {filteredOpportunities.length === 0 ? (
+              <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm">
+                <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-slate-400">
+                  <Sparkles className="w-6 h-6 text-amber-500" />
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredOpportunities.map((item) => (
-                    <OpportunityCard
-                      key={item.id}
-                      item={item}
-                      isBookmarked={bookmarks.includes(item.id)}
-                      onToggleBookmark={handleToggleBookmark}
-                      onSelect={(opp) => setSelectedItem(opp)}
-                      user={user}
-                    />
-                  ))}
-                </div>
-              )}
+                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">No Opportunities Match Your Current Search</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto mb-4">
+                  Try clearing your search keyword or switching your qualification filter to "All Qualifications".
+                </p>
+                <button
+                  onClick={handleResetFilters}
+                  className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-sm"
+                >
+                  Reset All Search Filters
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredOpportunities.map((item) => (
+                  <OpportunityCard
+                    key={item.id}
+                    item={item}
+                    isBookmarked={bookmarks.includes(item.id)}
+                    onToggleBookmark={handleToggleBookmark}
+                    onSelect={(opp) => setSelectedItem(opp)}
+                    user={user}
+                  />
+                ))}
+              </div>
+            )}
 
-            </div>
-          </>
-        )}
+          </div>
+        </>
 
       </main>
 
@@ -336,6 +353,15 @@ export default function App() {
         onOpenNewsletter={() => setIsNewsletterOpen(true)}
         onOpenAdmin={() => setIsAdminOpen(true)}
       />
+
+      {/* Deadline Reminder */}
+      {showReminder && (
+        <DeadlineReminder
+          items={reminderItems}
+          onDismiss={() => setShowReminder(false)}
+          onSelectItem={(item) => setSelectedItem(item)}
+        />
+      )}
 
       {/* Modals & Slide-overs */}
       <OpportunityModal
@@ -363,6 +389,12 @@ export default function App() {
         onLogin={(u) => setUser(u)}
         onRegister={(u) => setUser(u)}
         onLogout={() => setUser(null)}
+        bookmarkedItems={bookmarkedItemsList}
+        onToggleBookmark={handleToggleBookmark}
+        onSelectItem={(item) => { 
+          setIsAuthOpen(false); 
+          setTimeout(() => setSelectedItem(item), 200); 
+        }}
       />
 
       <ResumeMatcherModal

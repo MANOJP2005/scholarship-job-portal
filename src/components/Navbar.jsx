@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import {
   GraduationCap,
-  Bookmark,
-  PlusCircle,
   Sun,
   Moon,
   Bell,
@@ -10,13 +8,10 @@ import {
   UserCheck,
   Menu,
   X,
-  Sparkles,
-  Shield,
   UploadCloud
 } from 'lucide-react';
 
 export default function Navbar({
-  bookmarkCount = 0,
   activeTab = 'all',
   setActiveTab,
   userRole = 'student',
@@ -74,23 +69,6 @@ export default function Navbar({
               {tab.label}
             </button>
           ))}
-
-          <button
-            onClick={() => setActiveTab('bookmarks')}
-            className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center space-x-1.5 ${
-              activeTab === 'bookmarks'
-                ? 'bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-400 shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <Bookmark className="w-3.5 h-3.5" />
-            <span>Saved</span>
-            {bookmarkCount > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 text-[10px] bg-amber-600 text-white rounded-full font-bold leading-none">
-                {bookmarkCount}
-              </span>
-            )}
-          </button>
         </nav>
 
         {/* Action Controls */}
@@ -168,7 +146,6 @@ export default function Navbar({
               { key: 'all', label: 'Explore All' },
               { key: 'jobs', label: 'Govt Jobs (RRB / Banking / SSC)' },
               { key: 'scholarships', label: 'Scholarships' },
-              { key: 'bookmarks', label: `Saved Bookmarks (${bookmarkCount})` },
             ].map((t) => (
               <button
                 key={t.key}
