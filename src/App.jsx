@@ -118,6 +118,22 @@ export default function App() {
 
 
 
+  // Session Timeout Check
+  useEffect(() => {
+    const checkSession = () => {
+      const loginTime = localStorage.getItem('vidyasuddhi_login_time');
+      if (loginTime && Date.now() - parseInt(loginTime) > 30 * 60 * 1000) {
+        setUser(null);
+        localStorage.removeItem('vidyasuddhi_user_profile');
+        localStorage.removeItem('vidyasuddhi_login_time');
+      }
+    };
+    
+    checkSession();
+    const interval = setInterval(checkSession, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Persist User Profile
   useEffect(() => {
     if (user) {
@@ -386,9 +402,9 @@ export default function App() {
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
         user={user}
-        onLogin={(u) => setUser(u)}
-        onRegister={(u) => setUser(u)}
-        onLogout={() => setUser(null)}
+        onLogin={(u) => { setUser(u); localStorage.setItem('vidyasuddhi_login_time', Date.now().toString()); }}
+        onRegister={(u) => { setUser(u); localStorage.setItem('vidyasuddhi_login_time', Date.now().toString()); }}
+        onLogout={() => { setUser(null); localStorage.removeItem('vidyasuddhi_login_time'); }}
         bookmarkedItems={bookmarkedItemsList}
         onToggleBookmark={handleToggleBookmark}
         onSelectItem={(item) => { 
