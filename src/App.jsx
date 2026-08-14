@@ -132,6 +132,22 @@ export default function App() {
     localStorage.setItem('vidyasuddhi_custom_opportunities', JSON.stringify([newOpportunity, ...currentCustom]));
   };
 
+  // Edit Opportunity via Admin Modal
+  const handleEditOpportunity = (updatedItem) => {
+    setOpportunities(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
+    // Also update in custom localStorage if it's a custom listing
+    const currentCustom = JSON.parse(localStorage.getItem('vidyasuddhi_custom_opportunities') || '[]');
+    const updatedCustom = currentCustom.map(item => item.id === updatedItem.id ? updatedItem : item);
+    localStorage.setItem('vidyasuddhi_custom_opportunities', JSON.stringify(updatedCustom));
+  };
+
+  // Delete Opportunity via Admin Modal
+  const handleDeleteOpportunity = (itemId) => {
+    setOpportunities(prev => prev.filter(item => item.id !== itemId));
+    const currentCustom = JSON.parse(localStorage.getItem('vidyasuddhi_custom_opportunities') || '[]');
+    localStorage.setItem('vidyasuddhi_custom_opportunities', JSON.stringify(currentCustom.filter(item => item.id !== itemId)));
+  };
+
   // Quick Tag Select Handler + auto-scroll to results
   const handleSelectQuickFilter = (query) => {
     setSearchKeyword(query);
@@ -334,7 +350,10 @@ export default function App() {
       <AdminModal
         isOpen={isAdminOpen}
         onClose={() => setIsAdminOpen(false)}
+        opportunities={opportunities}
         onAddOpportunity={handleAddOpportunity}
+        onEditOpportunity={handleEditOpportunity}
+        onDeleteOpportunity={handleDeleteOpportunity}
       />
 
       <AuthModal
