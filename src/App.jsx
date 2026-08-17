@@ -21,15 +21,24 @@ export default function App() {
   const [opportunities, setOpportunities] = useState(() => {
     // Clear old key if it exists (one-time migration)
     localStorage.removeItem('vidyasuddhi_custom_opportunities');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const filterExpired = (list) => list.filter(item => new Date(item.deadline) >= today);
     const saved = localStorage.getItem('vidyasuddhi_all_opportunities');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        const active = filterExpired(parsed);
+        // If some expired items were removed, persist the cleaned list
+        if (active.length !== parsed.length) {
+          localStorage.setItem('vidyasuddhi_all_opportunities', JSON.stringify(active));
+        }
+        return active;
       } catch (e) {
-        return initialOpportunities;
+        return filterExpired(initialOpportunities);
       }
     }
-    return initialOpportunities;
+    return filterExpired(initialOpportunities);
   });
 
   // User Profile & Authentication State
