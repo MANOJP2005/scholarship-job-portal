@@ -82,11 +82,16 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
 
   const handleSubmitForm = (e) => {
     e.preventDefault();
+    const allDegrees = ['10th / 12th Pass', 'Diploma', 'B.E. / B.Tech', 'Graduate (Any)', 'Post Graduate'];
+    const resolvedDegrees = formData.qualification === 'All Students (Open)'
+      ? allDegrees
+      : [formData.qualification, 'Diploma', 'Graduate', '10th Pass', '12th Pass'];
+
     if (view === 'edit' && editingItem) {
       const updated = {
         ...editingItem,
         ...formData,
-        allowedDegrees: [formData.qualification, 'Diploma', 'Graduate', '10th Pass', '12th Pass'],
+        allowedDegrees: resolvedDegrees,
       };
       onEditOpportunity(updated);
       setSubmitted('Listing Updated Successfully!');
@@ -96,7 +101,7 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
         ...formData,
         logoText: formData.organization ? formData.organization.substring(0, 3).toUpperCase() : 'GOV',
         logoBg: formData.type === 'job' ? 'bg-amber-600 text-white' : 'bg-emerald-600 text-white',
-        allowedDegrees: [formData.qualification, 'Diploma', 'Graduate', '10th Pass', '12th Pass'],
+        allowedDegrees: resolvedDegrees,
         vacancies: formData.type === 'job' ? (formData.vacancies || '1,000+ Posts') : 'N/A',
         stipendSalary: formData.stipendSalary || 'As per Govt Norms',
         postedDate: new Date().toISOString().split('T')[0],

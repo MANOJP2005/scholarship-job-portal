@@ -17,13 +17,14 @@ import { initialOpportunities } from './data/mockData';
 import { Sparkles } from 'lucide-react';
 
 export default function App() {
-  // Opportunities State (Initial Mock + LocalStorage Custom Admin Posts)
+  // Opportunities State — persists full list so admin edits/deletes survive refresh
   const [opportunities, setOpportunities] = useState(() => {
-    const saved = localStorage.getItem('vidyasuddhi_custom_opportunities');
+    // Clear old key if it exists (one-time migration)
+    localStorage.removeItem('vidyasuddhi_custom_opportunities');
+    const saved = localStorage.getItem('vidyasuddhi_all_opportunities');
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
-        return [...parsed, ...initialOpportunities];
+        return JSON.parse(saved);
       } catch (e) {
         return initialOpportunities;
       }
@@ -167,27 +168,24 @@ export default function App() {
     );
   };
 
+  // Persist full opportunities list whenever it changes
+  useEffect(() => {
+    localStorage.setItem('vidyasuddhi_all_opportunities', JSON.stringify(opportunities));
+  }, [opportunities]);
+
   // Add Custom Opportunity via Admin Modal
   const handleAddOpportunity = (newOpportunity) => {
     setOpportunities(prev => [newOpportunity, ...prev]);
-    const currentCustom = JSON.parse(localStorage.getItem('vidyasuddhi_custom_opportunities') || '[]');
-    localStorage.setItem('vidyasuddhi_custom_opportunities', JSON.stringify([newOpportunity, ...currentCustom]));
   };
 
   // Edit Opportunity via Admin Modal
   const handleEditOpportunity = (updatedItem) => {
     setOpportunities(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
-    // Also update in custom localStorage if it's a custom listing
-    const currentCustom = JSON.parse(localStorage.getItem('vidyasuddhi_custom_opportunities') || '[]');
-    const updatedCustom = currentCustom.map(item => item.id === updatedItem.id ? updatedItem : item);
-    localStorage.setItem('vidyasuddhi_custom_opportunities', JSON.stringify(updatedCustom));
   };
 
   // Delete Opportunity via Admin Modal
   const handleDeleteOpportunity = (itemId) => {
     setOpportunities(prev => prev.filter(item => item.id !== itemId));
-    const currentCustom = JSON.parse(localStorage.getItem('vidyasuddhi_custom_opportunities') || '[]');
-    localStorage.setItem('vidyasuddhi_custom_opportunities', JSON.stringify(currentCustom.filter(item => item.id !== itemId)));
   };
 
   // Quick Tag Select Handler + auto-scroll to results
@@ -221,6 +219,7 @@ export default function App() {
 
       // Qualification Filter
       if (selectedQualification !== 'All Qualifications') {
+        if (item.qualification === 'All Students (Open)') return true;
         const matchesQual = item.qualification.toLowerCase().includes(selectedQualification.toLowerCase()) ||
           (item.allowedDegrees && item.allowedDegrees.some(d => d.toLowerCase().includes(selectedQualification.toLowerCase())));
         if (!matchesQual) return false;
