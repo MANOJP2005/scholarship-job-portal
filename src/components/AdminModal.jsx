@@ -29,6 +29,7 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
   const [submitted, setSubmitted] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [customQualInput, setCustomQualInput] = useState('');
 
   if (!isOpen) return null;
 
@@ -58,6 +59,7 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
 
   const openAddForm = () => {
     setFormData({ ...emptyForm });
+    setCustomQualInput('');
     setEditingItem(null);
     setView('add');
   };
@@ -67,12 +69,17 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
     const existingQuals = item.allowedDegrees
       ? qualificationChoices.filter(q => item.allowedDegrees.some(d => d.toLowerCase().includes(q.toLowerCase())))
       : qualificationChoices.filter(q => q === item.qualification);
+    // Detect any custom (non-standard) qualifications
+    const customQuals = item.allowedDegrees
+      ? item.allowedDegrees.filter(d => !qualificationChoices.some(q => q.toLowerCase() === d.toLowerCase()))
+      : [];
+    setCustomQualInput(customQuals.join(', '));
     setFormData({
       title: item.title || '',
       type: item.type || 'job',
       category: item.category || 'RRB Railway',
       organization: item.organization || '',
-      qualifications: existingQuals.length ? existingQuals : [],
+      qualifications: [...existingQuals, ...customQuals],
       vacancies: item.vacancies || '',
       stipendSalary: item.stipendSalary || '',
       applicationFee: item.applicationFee || 'Free',
@@ -88,10 +95,16 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
 
   const handleSubmitForm = (e) => {
     e.preventDefault();
-    if (formData.qualifications.length === 0) return;
-    const isAll = formData.qualifications.length === qualificationChoices.length;
-    const resolvedDegrees = isAll ? qualificationChoices : formData.qualifications;
-    const qualificationLabel = isAll ? 'All Students (Open)' : formData.qualifications.join(', ');
+    // Merge custom qualification if provided
+    const customTrimmed = customQualInput.trim();
+    const allSelected = customTrimmed
+      ? [...formData.qualifications.filter(q => !customQualInput.split(',').map(s => s.trim()).includes(q)), ...customTrimmed.split(',').map(s => s.trim()).filter(Boolean)]
+      : formData.qualifications;
+    const finalQuals = [...new Set(allSelected)];
+    if (finalQuals.length === 0) return;
+    const isAll = qualificationChoices.every(q => finalQuals.includes(q)) && !customTrimmed;
+    const resolvedDegrees = finalQuals;
+    const qualificationLabel = isAll ? 'All Students (Open)' : finalQuals.join(', ');
 
     if (view === 'edit' && editingItem) {
       const updated = {
@@ -127,6 +140,7 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
       setSubmitted('');
       setView('dashboard');
       setFormData({ ...emptyForm });
+      setCustomQualInput('');
       setEditingItem(null);
     }, 1200);
   };
@@ -211,8 +225,27 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
                 <span className="text-slate-800 dark:text-slate-200">{q}</span>
               </label>
             ))}
+            {/* Other / Custom */}
+            <div className="pt-1 border-t border-slate-200 dark:border-slate-700">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={!!customQualInput.trim()}
+                  onChange={(e) => { if (!e.target.checked) setCustomQualInput(''); }}
+                  className="w-3.5 h-3.5 accent-amber-600"
+                />
+                <span className="text-slate-800 dark:text-slate-200">Other (specify)</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. MBA, CA, LLB (comma separated)"
+                value={customQualInput}
+                onChange={(e) => setCustomQualInput(e.target.value)}
+                className="mt-1.5 w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-xs"
+              />
+            </div>
           </div>
-          {formData.qualifications.length === 0 && (
+          {formData.qualifications.length === 0 && !customQualInput.trim() && (
             <p className="text-red-500 text-[10px] mt-1">Select at least one qualification.</p>
           )}
         </div>
