@@ -35,9 +35,7 @@ export default function Navbar({
           onClick={() => setActiveTab('all')}
           className="flex items-center space-x-3 cursor-pointer group flex-shrink-0"
         >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600 flex items-center justify-center text-white shadow-lg shadow-amber-500/25 group-hover:scale-105 transition-transform">
-            <GraduationCap className="w-6 h-6" />
-          </div>
+          <img src="/logo.jpg" alt="Vidyasuddhi" className="w-10 h-10 rounded-xl object-cover" />
           <div>
             <div className="flex items-center space-x-1.5">
               <span className="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white font-serif">

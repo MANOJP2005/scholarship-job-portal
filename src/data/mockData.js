@@ -266,6 +266,7 @@ export const categoryOptions = [
 
 export const qualificationOptions = [
   "All Qualifications",
+  "All Students (Open)",
   "10th / 12th Pass",
   "Diploma",
   "B.E. / B.Tech",

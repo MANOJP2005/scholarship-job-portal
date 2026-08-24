@@ -21,18 +21,28 @@ import { Sparkles } from 'lucide-react';
 export default function App() {
   const isAdminPage = window.location.pathname === '/admin';
 
-  // Opportunities State (Initial Mock + LocalStorage Custom Admin Posts)
+  // Opportunities State — persists full list so admin edits/deletes survive refresh
   const [opportunities, setOpportunities] = useState(() => {
-    const saved = localStorage.getItem('vidyasuddhi_custom_opportunities');
+    // Clear old key if it exists (one-time migration)
+    localStorage.removeItem('vidyasuddhi_custom_opportunities');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const filterExpired = (list) => list.filter(item => new Date(item.deadline) >= today);
+    const saved = localStorage.getItem('vidyasuddhi_all_opportunities');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        return [...parsed, ...initialOpportunities];
+        const active = filterExpired(parsed);
+        // If some expired items were removed, persist the cleaned list
+        if (active.length !== parsed.length) {
+          localStorage.setItem('vidyasuddhi_all_opportunities', JSON.stringify(active));
+        }
+        return active;
       } catch (e) {
-        return initialOpportunities;
+        return filterExpired(initialOpportunities);
       }
     }
-    return initialOpportunities;
+    return filterExpired(initialOpportunities);
   });
   const [notifications, setNotifications] = useState(() => JSON.parse(localStorage.getItem('vidyasuddhi_notifications') || '[]'));
 
@@ -141,6 +151,22 @@ export default function App() {
 
 
 
+  // Session Timeout Check
+  useEffect(() => {
+    const checkSession = () => {
+      const loginTime = localStorage.getItem('vidyasuddhi_login_time');
+      if (loginTime && Date.now() - parseInt(loginTime) > 30 * 60 * 1000) {
+        setUser(null);
+        localStorage.removeItem('vidyasuddhi_user_profile');
+        localStorage.removeItem('vidyasuddhi_login_time');
+      }
+    };
+    
+    checkSession();
+    const interval = setInterval(checkSession, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Persist User Profile
   useEffect(() => {
     if (user) {
@@ -173,6 +199,11 @@ export default function App() {
       prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
     );
   };
+
+  // Persist full opportunities list whenever it changes
+  useEffect(() => {
+    localStorage.setItem('vidyasuddhi_all_opportunities', JSON.stringify(opportunities));
+  }, [opportunities]);
 
   // Add Custom Opportunity via Admin Modal
   const handleAddOpportunity = (newOpportunity) => {
@@ -241,6 +272,7 @@ export default function App() {
 
       // Qualification Filter
       if (selectedQualification !== 'All Qualifications') {
+        if (item.qualification === 'All Students (Open)') return true;
         const matchesQual = item.qualification.toLowerCase().includes(selectedQualification.toLowerCase()) ||
           (item.allowedDegrees && item.allowedDegrees.some(d => d.toLowerCase().includes(selectedQualification.toLowerCase())));
         if (!matchesQual) return false;
@@ -443,9 +475,9 @@ export default function App() {
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
         user={user}
-        onLogin={(u) => setUser(u)}
-        onRegister={(u) => setUser(u)}
-        onLogout={() => setUser(null)}
+        onLogin={(u) => { setUser(u); localStorage.setItem('vidyasuddhi_login_time', Date.now().toString()); }}
+        onRegister={(u) => { setUser(u); localStorage.setItem('vidyasuddhi_login_time', Date.now().toString()); }}
+        onLogout={() => { setUser(null); localStorage.removeItem('vidyasuddhi_login_time'); }}
         bookmarkedItems={bookmarkedItemsList}
         onToggleBookmark={handleToggleBookmark}
         onSelectItem={(item) => { 
