@@ -40,8 +40,10 @@ export default function OpportunityCard({ item, isBookmarked, onToggleBookmark, 
                   item.type === 'job'
                     ? 'bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 border border-sky-200/80 dark:border-sky-800'
                     : 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800'
-                }`}>{item.type === 'job' ? 'Govt Job' : 'Scholarship'}</span>
+                }`}>{item.type === 'job' ? 'Govt Job' : item.type === 'loan' ? 'Education Loan' : item.type === 'interest-subsidy' ? 'Interest Subsidy' : item.type === 'financial-aid' ? 'Financial Aid' : 'Scholarship'}</span>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-stone-100 dark:bg-slate-800 text-stone-500 dark:text-slate-400">{item.category}</span>
+                {item.status && <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${item.status === 'LIVE' ? 'bg-emerald-600 text-white' : item.status === 'RESTRICTED' ? 'bg-rose-600 text-white' : 'bg-slate-600 text-white'}`}>{item.status}</span>}
+                {item.experienceType && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">{item.experienceType}</span>}
                 {aiMatchScore && <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-emerald-600 text-white flex items-center"><Zap className="w-2.5 h-2.5 mr-0.5"/>{aiMatchScore}%</span>}
               </div>
               <p className="text-[11px] font-medium text-stone-400 dark:text-slate-500 mt-0.5 line-clamp-1">{item.organization}</p>

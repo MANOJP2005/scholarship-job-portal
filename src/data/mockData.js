@@ -261,6 +261,14 @@ export const categoryOptions = [
   "Central Govt",
   "Merit Scholarship",
   "Technical Scholarship",
+  "Government Scholarship",
+  "Private / CSR Scholarship",
+  "Vidyasaarathi",
+  "Karnataka Scholarship",
+  "Education Loans & Financial Aid",
+  "Education Loans",
+  "Interest Subsidy",
+  "Financial Aid",
   "PSU / Research"
 ];
 

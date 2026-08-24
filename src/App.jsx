@@ -16,10 +16,15 @@ import WhatsAppFloat from './components/WhatsAppFloat';
 import DeadlineReminder from './components/DeadlineReminder';
 import { fetchAdminOpportunities, fetchAdminNotifications, saveAdminOpportunity, removeAdminOpportunity, saveAdminNotification, removeAdminNotification, signInAdmin, signOutAdmin } from './services/adminService';
 import { initialOpportunities } from './data/mockData';
+import { scholarshipOpportunities } from './data/scholarshipData';
+import { jobOpportunities } from './data/jobData';
+import { additionalScholarshipOpportunities, educationLoanOpportunities } from './data/additionalScholarshipData';
+import { financialAidOpportunities } from './data/financialAidData';
 import { Sparkles } from 'lucide-react';
 
 export default function App() {
   const isAdminPage = window.location.pathname === '/admin';
+  const defaultOpportunities = [...initialOpportunities, ...scholarshipOpportunities, ...additionalScholarshipOpportunities, ...educationLoanOpportunities, ...financialAidOpportunities, ...jobOpportunities];
 
   // Opportunities State — persists full list so admin edits/deletes survive refresh
   const [opportunities, setOpportunities] = useState(() => {
@@ -32,17 +37,19 @@ export default function App() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        const active = filterExpired(parsed);
+        const savedIds = new Set(parsed.map(item => item.id));
+        const merged = [...parsed, ...scholarshipOpportunities.filter(item => !savedIds.has(item.id)), ...additionalScholarshipOpportunities.filter(item => !savedIds.has(item.id)), ...educationLoanOpportunities.filter(item => !savedIds.has(item.id)), ...financialAidOpportunities.filter(item => !savedIds.has(item.id)), ...jobOpportunities.filter(item => !savedIds.has(item.id))];
+        const active = filterExpired(merged);
         // If some expired items were removed, persist the cleaned list
         if (active.length !== parsed.length) {
           localStorage.setItem('vidyasuddhi_all_opportunities', JSON.stringify(active));
         }
         return active;
       } catch (e) {
-        return filterExpired(initialOpportunities);
+        return filterExpired(defaultOpportunities);
       }
     }
-    return filterExpired(initialOpportunities);
+    return filterExpired(defaultOpportunities);
   });
   const [notifications, setNotifications] = useState(() => JSON.parse(localStorage.getItem('vidyasuddhi_notifications') || '[]'));
 
@@ -79,6 +86,7 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [selectedQualification, setSelectedQualification] = useState('All Qualifications');
   const [urgencyFilter, setUrgencyFilter] = useState('all');
+  const [experienceFilter, setExperienceFilter] = useState('all');
 
   // Modals States
   const [selectedItem, setSelectedItem] = useState(null);
@@ -255,6 +263,7 @@ export default function App() {
     setSelectedCategory('All Categories');
     setSelectedQualification('All Qualifications');
     setUrgencyFilter('all');
+    setExperienceFilter('all');
     setActiveTypeTab('all');
   };
 
@@ -266,6 +275,10 @@ export default function App() {
       if (activeTab === 'scholarships' && item.type !== 'scholarship') return false;
       if (activeTypeTab === 'job' && item.type !== 'job') return false;
       if (activeTypeTab === 'scholarship' && item.type !== 'scholarship') return false;
+      if (activeTypeTab === 'loan' && item.type !== 'loan') return false;
+      if (activeTypeTab === 'interest-subsidy' && item.type !== 'interest-subsidy') return false;
+      if (activeTypeTab === 'financial-aid' && item.type !== 'financial-aid') return false;
+      if (experienceFilter !== 'all' && item.type === 'job' && item.experienceType !== experienceFilter) return false;
 
       // Category Filter
       if (selectedCategory !== 'All Categories' && item.category !== selectedCategory) return false;
@@ -298,7 +311,7 @@ export default function App() {
 
       return true;
     });
-  }, [opportunities, activeTab, activeTypeTab, selectedCategory, selectedQualification, searchKeyword, urgencyFilter]);
+  }, [opportunities, activeTab, activeTypeTab, selectedCategory, selectedQualification, searchKeyword, urgencyFilter, experienceFilter]);
 
   // Bookmarked items list
   const bookmarkedItemsList = useMemo(() => {
@@ -386,6 +399,8 @@ export default function App() {
             setSelectedQualification={setSelectedQualification}
             urgencyFilter={urgencyFilter}
             setUrgencyFilter={setUrgencyFilter}
+            experienceFilter={experienceFilter}
+            setExperienceFilter={setExperienceFilter}
             onResetFilters={handleResetFilters}
             resultCount={filteredOpportunities.length}
           />

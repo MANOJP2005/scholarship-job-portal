@@ -7,7 +7,10 @@ const emptyForm = {
   title: '', type: 'job', category: 'RRB Railway', organization: '',
   qualifications: [], vacancies: '', stipendSalary: '',
   applicationFee: 'Free', ageLimit: '18 - 30 Years', deadline: '',
-  officialUrl: '', pdfUrl: '', description: '',
+  officialUrl: '', pdfUrl: '', description: '', eligibilityDetails: '', selectionProcess: '', syllabusHighlights: '',
+  scholarshipProvider: '', scholarshipAmount: '', incomeLimit: '', requiredDocuments: '', benefits: '', applicationSteps: '',
+  status: 'LIVE', lastVerified: new Date().toISOString().split('T')[0], eligibilityAudience: 'All India',
+  experienceType: 'Freshers',
 };
 
 export default function AdminModal({ isOpen, onClose, opportunities, onAddOpportunity, onEditOpportunity, onDeleteOpportunity, notifications = [], onAddNotification, onDeleteNotification, onAdminLogin, onAdminLogout, pageMode = false }) {
@@ -95,6 +98,14 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
       officialUrl: item.officialUrl || '',
       pdfUrl: item.pdfUrl || '',
       description: item.description || '',
+      eligibilityDetails: (item.eligibilityDetails || []).join('\n'),
+      selectionProcess: (item.selectionProcess || []).join('\n'),
+      syllabusHighlights: (item.syllabusHighlights || []).join('\n'),
+      scholarshipProvider: item.scholarshipProvider || '', scholarshipAmount: item.scholarshipAmount || '',
+      incomeLimit: item.incomeLimit || '', requiredDocuments: (item.requiredDocuments || []).join('\n'),
+      benefits: (item.benefits || []).join('\n'), applicationSteps: (item.applicationSteps || []).join('\n'),
+      status: item.status || 'LIVE', lastVerified: item.lastVerified || new Date().toISOString().split('T')[0], eligibilityAudience: item.eligibilityAudience || 'All India',
+      experienceType: item.experienceType || 'Freshers',
     });
     setEditingItem(item);
     setView('edit');
@@ -119,6 +130,13 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
         ...formData,
         qualification: qualificationLabel,
         allowedDegrees: resolvedDegrees,
+        eligibilityDetails: formData.eligibilityDetails.split('\n').map(value => value.trim()).filter(Boolean),
+        selectionProcess: formData.type === 'job' ? formData.selectionProcess.split('\n').map(value => value.trim()).filter(Boolean) : [],
+        syllabusHighlights: formData.type === 'job' ? formData.syllabusHighlights.split('\n').map(value => value.trim()).filter(Boolean) : [],
+        scholarshipProvider: formData.type === 'scholarship' ? formData.scholarshipProvider : '', scholarshipAmount: formData.type === 'scholarship' ? formData.scholarshipAmount : '',
+        incomeLimit: formData.type === 'scholarship' ? formData.incomeLimit : '', requiredDocuments: formData.type === 'scholarship' ? formData.requiredDocuments.split('\n').map(value => value.trim()).filter(Boolean) : [],
+        benefits: formData.type === 'scholarship' ? formData.benefits.split('\n').map(value => value.trim()).filter(Boolean) : [], applicationSteps: formData.type === 'scholarship' ? formData.applicationSteps.split('\n').map(value => value.trim()).filter(Boolean) : [],
+        status: formData.type === 'job' ? formData.status : undefined, lastVerified: formData.type === 'job' ? formData.lastVerified : undefined, eligibilityAudience: formData.type === 'job' ? formData.eligibilityAudience : undefined, experienceType: formData.type === 'job' ? formData.experienceType : undefined,
       };
       onEditOpportunity(updated);
       setSubmitted('Listing Updated Successfully!');
@@ -136,9 +154,12 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
         location: 'India',
         pdfUrl: formData.pdfUrl || formData.officialUrl || '#',
         officialUrl: formData.officialUrl || '#',
-        eligibilityDetails: ['Educational qualification as per official notification.', 'Age limit as per govt rules.'],
-        selectionProcess: ['Written CBT / Screening Test', 'Document Verification'],
-        syllabusHighlights: ['General Knowledge', 'Reasoning Ability', 'Domain Skills'],
+        eligibilityDetails: formData.eligibilityDetails.split('\n').map(value => value.trim()).filter(Boolean),
+        selectionProcess: formData.type === 'job' ? formData.selectionProcess.split('\n').map(value => value.trim()).filter(Boolean) : [],
+        syllabusHighlights: formData.type === 'job' ? formData.syllabusHighlights.split('\n').map(value => value.trim()).filter(Boolean) : [],
+        scholarshipProvider: formData.scholarshipProvider, scholarshipAmount: formData.scholarshipAmount, incomeLimit: formData.incomeLimit,
+        requiredDocuments: formData.requiredDocuments.split('\n').map(value => value.trim()).filter(Boolean), benefits: formData.benefits.split('\n').map(value => value.trim()).filter(Boolean), applicationSteps: formData.applicationSteps.split('\n').map(value => value.trim()).filter(Boolean),
+        status: formData.status, lastVerified: formData.lastVerified, eligibilityAudience: formData.eligibilityAudience,
       };
       onAddOpportunity(newOpp);
       setSubmitted('Listing Published Successfully!');
@@ -301,6 +322,34 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
         <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Description</label>
         <textarea rows="2" placeholder="Brief summary..." value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white" />
+      </div>
+
+      <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/50 space-y-3">
+        <h4 className="text-xs font-extrabold uppercase tracking-wider text-amber-700 dark:text-amber-400">{formData.type === 'job' ? 'Job details' : 'Scholarship details'}</h4>
+        {formData.type === 'scholarship' ? (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input placeholder="Scholarship provider / foundation" value={formData.scholarshipProvider} onChange={(e) => setFormData({ ...formData, scholarshipProvider: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs" />
+              <input placeholder="Award amount / frequency" value={formData.scholarshipAmount} onChange={(e) => setFormData({ ...formData, scholarshipAmount: e.target.value, stipendSalary: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs" />
+              <input placeholder="Family income limit" value={formData.incomeLimit} onChange={(e) => setFormData({ ...formData, incomeLimit: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs" />
+            </div>
+            <textarea rows="3" placeholder="Required documents, one per line" value={formData.requiredDocuments} onChange={(e) => setFormData({ ...formData, requiredDocuments: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs" />
+            <textarea rows="3" placeholder="Scholarship benefits, one per line" value={formData.benefits} onChange={(e) => setFormData({ ...formData, benefits: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs" />
+            <textarea rows="3" placeholder="Application steps, one per line" value={formData.applicationSteps} onChange={(e) => setFormData({ ...formData, applicationSteps: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs" />
+          </>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"><option>LIVE</option><option>EXAM STAGE</option><option>RESTRICTED</option><option>CLOSED</option></select>
+              <input type="date" value={formData.lastVerified} onChange={(e) => setFormData({ ...formData, lastVerified: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs" />
+              <input placeholder="Eligibility audience" value={formData.eligibilityAudience} onChange={(e) => setFormData({ ...formData, eligibilityAudience: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs" />
+              <select value={formData.experienceType} onChange={(e) => setFormData({ ...formData, experienceType: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"><option>Freshers</option><option>Experienced</option><option>Apprenticeship</option><option>Contract</option></select>
+            </div>
+            <textarea rows="3" placeholder="Eligibility criteria, one per line" value={formData.eligibilityDetails} onChange={(e) => setFormData({ ...formData, eligibilityDetails: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs" />
+            <textarea rows="3" placeholder="Selection process, one per line" value={formData.selectionProcess} onChange={(e) => setFormData({ ...formData, selectionProcess: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs" />
+            <textarea rows="3" placeholder="Syllabus highlights, one per line" value={formData.syllabusHighlights} onChange={(e) => setFormData({ ...formData, syllabusHighlights: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs" />
+          </>
+        )}
       </div>
 
       {/* Buttons */}

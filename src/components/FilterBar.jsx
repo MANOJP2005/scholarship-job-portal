@@ -11,6 +11,8 @@ export default function FilterBar({
   setSelectedQualification,
   urgencyFilter,
   setUrgencyFilter,
+  experienceFilter,
+  setExperienceFilter,
   onResetFilters,
   resultCount
 }) {
@@ -29,7 +31,7 @@ export default function FilterBar({
           </div>
 
           {/* Type Selector Pills */}
-          <div className="flex items-center space-x-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+          <div className="flex flex-wrap items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
             <button
               onClick={() => setActiveTypeTab('all')}
               className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
@@ -60,11 +62,14 @@ export default function FilterBar({
             >
               Scholarships Only
             </button>
+            <button onClick={() => setActiveTypeTab('loan')} className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${activeTypeTab === 'loan' ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}>Education Loans</button>
+            <button onClick={() => setActiveTypeTab('interest-subsidy')} className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${activeTypeTab === 'interest-subsidy' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}>Interest Subsidy</button>
+            <button onClick={() => setActiveTypeTab('financial-aid')} className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${activeTypeTab === 'financial-aid' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}>Financial Aid</button>
           </div>
         </div>
 
         {/* Dropdown Filters Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
           
           {/* Category Dropdown */}
           <div>
@@ -79,6 +84,13 @@ export default function FilterBar({
               {categoryOptions.map((cat, idx) => (
                 <option key={idx} value={cat}>{cat}</option>
               ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 flex items-center">Opportunity Type</label>
+            <select value={experienceFilter} onChange={(e) => setExperienceFilter(e.target.value)} className="w-full py-2 px-3 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none">
+              <option value="all">All Experience Types</option><option>Freshers</option><option>Experienced</option><option>Apprenticeship</option><option>Contract</option>
             </select>
           </div>
 
@@ -117,7 +129,7 @@ export default function FilterBar({
         </div>
 
         {/* Reset Action */}
-        {(selectedCategory !== "All Categories" || selectedQualification !== "All Qualifications" || urgencyFilter !== "all" || activeTypeTab !== "all") && (
+        {(selectedCategory !== "All Categories" || selectedQualification !== "All Qualifications" || urgencyFilter !== "all" || experienceFilter !== "all" || activeTypeTab !== "all") && (
           <div className="flex justify-end pt-1">
             <button
               onClick={onResetFilters}
