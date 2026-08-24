@@ -189,24 +189,21 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
   };
   
   const handleShareWhatsApp = () => {
-    const today = new Date().toLocaleDateString('en-GB'); // DD/MM/YYYY format approx
-    const sharedIds = JSON.parse(localStorage.getItem('vidyasuddhi_shared_whatsapp_ids') || '[]');
-    const sharedIdSet = new Set(sharedIds);
-    const sortedOpportunities = [...opportunities].sort((first, second) => {
-      const firstDate = new Date(first.lastVerified || first.postedDate || 0).getTime();
-      const secondDate = new Date(second.lastVerified || second.postedDate || 0).getTime();
-      return secondDate - firstDate;
-    });
-    const newOpportunities = sortedOpportunities.filter(item => !sharedIdSet.has(item.id) && item.status !== 'CLOSED');
-    const top5 = (newOpportunities.length >= 5 ? newOpportunities : sortedOpportunities.filter(item => item.status !== 'CLOSED')).slice(0, 5);
-    localStorage.setItem('vidyasuddhi_shared_whatsapp_ids', JSON.stringify([...new Set([...sharedIds, ...top5.map(item => item.id)])]));
-    let msg = `🎓 *VIDYASUDDHI Updates - ${today}* 🎓\n\n`;
-    top5.forEach((opp, i) => {
+    const currentDate = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-GB');
+    const updatedToday = opportunities.filter(item => (item.lastVerified || item.postedDate) === currentDate);
+    let msg = `🎓 *VIDYASUDDHI Daily Updates - ${today}* 🎓\n\n`;
+    msg += `*${updatedToday.length} opportunities updated today*\n\n`;
+    updatedToday.forEach((opp, i) => {
       msg += `${i+1}. *${opp.title}*\n`;
       msg += `   Type: ${opp.type === 'job' ? '🏛️ Govt Job' : opp.type === 'loan' ? '💰 Education Loan' : opp.type === 'interest-subsidy' ? '💸 Interest Subsidy' : opp.type === 'financial-aid' ? '🏦 Financial Aid' : '🎓 Scholarship'}\n`;
       if (opp.status) msg += `   Status: ${opp.status}\n`;
       msg += `   Deadline: ${opp.deadline}\n\n`;
+      if (opp.type === 'job') msg += `   Eligibility: ${opp.eligibilityAudience || 'As per official notification'}\n`;
+      msg += `   Benefit: ${opp.type === 'job' ? (opp.stipendSalary || 'As per notification') : (opp.scholarshipAmount || opp.stipendSalary || 'See official details')}\n`;
+      msg += `   Official link: ${opp.officialUrl}\n\n`;
     });
+    if (updatedToday.length === 0) msg += 'No opportunities were updated today. Please check again after the next verified update.\n\n';
     msg += `👉 Apply now at: https://vidyasuddhi.com`;
     const encoded = encodeURIComponent(msg);
     window.open(`https://wa.me/?text=${encoded}`, '_blank');
