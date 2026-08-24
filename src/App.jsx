@@ -21,6 +21,7 @@ import { jobOpportunities } from './data/jobData';
 import { additionalScholarshipOpportunities, educationLoanOpportunities } from './data/additionalScholarshipData';
 import { financialAidOpportunities } from './data/financialAidData';
 import { Sparkles } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from './services/supabaseClient';
 
 export default function App() {
   const isAdminPage = window.location.pathname === '/admin';
@@ -144,6 +145,31 @@ export default function App() {
       }
     };
     loadAdminData();
+  }, []);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return undefined;
+
+    const applyAuthUser = (authUser) => {
+      if (!authUser) {
+        setUser(null);
+        return;
+      }
+      setUser({
+        id: authUser.id,
+        email: authUser.email,
+        ...authUser.user_metadata,
+        isLoggedIn: true,
+        createdAt: authUser.created_at,
+      });
+    };
+
+    supabase.auth.getSession().then(({ data }) => applyAuthUser(data.session?.user || null));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      applyAuthUser(session?.user || null);
+    });
+
+    return () => listener.subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -501,7 +527,7 @@ export default function App() {
         user={user}
         onLogin={(u) => { setUser(u); localStorage.setItem('vidyasuddhi_login_time', Date.now().toString()); }}
         onRegister={(u) => { setUser(u); localStorage.setItem('vidyasuddhi_login_time', Date.now().toString()); }}
-        onLogout={() => { setUser(null); localStorage.removeItem('vidyasuddhi_login_time'); }}
+        onLogout={async () => { await supabase.auth.signOut(); setUser(null); localStorage.removeItem('vidyasuddhi_login_time'); }}
         bookmarkedItems={bookmarkedItemsList}
         onToggleBookmark={handleToggleBookmark}
         onSelectItem={(item) => { 

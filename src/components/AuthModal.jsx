@@ -1,25 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, User, Mail, Phone, GraduationCap, AlertTriangle, Eye, EyeOff, Lock, Bookmark, Trash2, Calendar } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 
 export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, onLogout, bookmarkedItems = [], onToggleBookmark, onSelectItem }) {
-  const getRegisteredUsers = () => {
-    try {
-      return JSON.parse(localStorage.getItem('vidyasuddhi_registered_users') || '[]');
-    } catch {
-      return [];
-    }
-  };
-
   const [mode, setMode] = useState('register'); // 'login' | 'register'
   
   useEffect(() => {
     if (isOpen && !user) {
-      const users = getRegisteredUsers();
-      if (users.length > 0) {
-        setMode('login');
-      } else {
-        setMode('register');
-      }
+      setMode('login');
     }
   }, [isOpen, user]);
 
@@ -46,72 +34,82 @@ export default function AuthModal({ isOpen, onClose, user, onLogin, onRegister, 
   if (!isOpen) return null;
 
   // Save a new user to the registered users list
-  const saveRegisteredUser = (userProfile) => {
-    const existing = getRegisteredUsers();
-    if (!existing.find(u => u.email === userProfile.email)) {
-      existing.push(userProfile);
-      localStorage.setItem('vidyasuddhi_registered_users', JSON.stringify(existing));
-    }
-  };
-
-  const handleRegisterSubmit = (e) => {
+  const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     if (!formData.fullName || !formData.email || !formData.password) return;
+
+    if (!isSupabaseConfigured()) {
+      setLoginError('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+      return;
+    }
 
     if (formData.password.length < 6) {
       setLoginError('Password must be at least 6 characters.');
       return;
     }
 
-    // Check if email already registered
-    const existingUsers = getRegisteredUsers();
-    if (existingUsers.find(u => u.email.toLowerCase() === formData.email.toLowerCase())) {
-      setLoginError('This email is already registered. Please Sign In instead.');
-      setMode('login');
-      setLoginEmail(formData.email);
+    const { data, error } = await supabase.auth.signUp({
+      email: formData.email,
+      password: formData.password,
+      options: { data: {
+        fullName: formData.fullName,
+        phone: formData.phone,
+        educationLevel: formData.educationLevel,
+        studyArea: formData.studyArea,
+        currentYear: formData.currentYear,
+      } },
+    });
+
+    if (error) {
+      setLoginError(error.message);
       return;
     }
 
     const newUserProfile = {
-      id: `user-${Date.now()}`,
-      ...formData,
-      isLoggedIn: true,
-      createdAt: new Date().toISOString()
+      id: data.user.id,
+      email: data.user.email,
+      ...data.user.user_metadata,
+      isLoggedIn: Boolean(data.session),
+      createdAt: data.user.created_at,
     };
 
-    // Save to registered users list
-    saveRegisteredUser(newUserProfile);
-    
-    // Auto-login after registration
-    onRegister(newUserProfile);
-    setSuccessMsg('Account Created Successfully! Welcome to VIDYASUDDHI.');
+    if (data.session) {
+      onRegister(newUserProfile);
+      setSuccessMsg('Account Created Successfully! Welcome to VIDYASUDDHI.');
+    } else {
+      setSuccessMsg('Account created. Check your email to confirm your account, then sign in.');
+      setMode('login');
+      setLoginEmail(formData.email);
+    }
     setLoginError('');
     setTimeout(() => {
       setSuccessMsg('');
-      onClose();
-    }, 1500);
+      if (data.session) onClose();
+    }, data.session ? 1500 : 2500);
   };
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     if (!loginEmail || !loginPassword) return;
 
-    // Look up the email in registered users
-    const existingUsers = getRegisteredUsers();
-    const foundUser = existingUsers.find(u => u.email.toLowerCase() === loginEmail.toLowerCase());
-
-    if (!foundUser) {
-      setLoginError('No account found. Please Register first.');
+    if (!isSupabaseConfigured()) {
+      setLoginError('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
       return;
     }
 
-    if (foundUser.password !== loginPassword) {
-      setLoginError('Incorrect password. Try again.');
+    const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
+    if (error) {
+      setLoginError(error.message);
       return;
     }
 
-    // Login with the real registered profile
-    onLogin({ ...foundUser, isLoggedIn: true });
+    onLogin({
+      id: data.user.id,
+      email: data.user.email,
+      ...data.user.user_metadata,
+      isLoggedIn: true,
+      createdAt: data.user.created_at,
+    });
     setLoginError('');
     setSuccessMsg('Logged In Successfully!');
     setTimeout(() => {
