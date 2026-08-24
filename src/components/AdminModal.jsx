@@ -190,11 +190,21 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
   
   const handleShareWhatsApp = () => {
     const today = new Date().toLocaleDateString('en-GB'); // DD/MM/YYYY format approx
-    const top5 = opportunities.slice(0, 5);
+    const sharedIds = JSON.parse(localStorage.getItem('vidyasuddhi_shared_whatsapp_ids') || '[]');
+    const sharedIdSet = new Set(sharedIds);
+    const sortedOpportunities = [...opportunities].sort((first, second) => {
+      const firstDate = new Date(first.lastVerified || first.postedDate || 0).getTime();
+      const secondDate = new Date(second.lastVerified || second.postedDate || 0).getTime();
+      return secondDate - firstDate;
+    });
+    const newOpportunities = sortedOpportunities.filter(item => !sharedIdSet.has(item.id) && item.status !== 'CLOSED');
+    const top5 = (newOpportunities.length >= 5 ? newOpportunities : sortedOpportunities.filter(item => item.status !== 'CLOSED')).slice(0, 5);
+    localStorage.setItem('vidyasuddhi_shared_whatsapp_ids', JSON.stringify([...new Set([...sharedIds, ...top5.map(item => item.id)])]));
     let msg = `🎓 *VIDYASUDDHI Updates - ${today}* 🎓\n\n`;
     top5.forEach((opp, i) => {
       msg += `${i+1}. *${opp.title}*\n`;
-      msg += `   Type: ${opp.type === 'job' ? '🏛️ Govt Job' : '🎓 Scholarship'}\n`;
+      msg += `   Type: ${opp.type === 'job' ? '🏛️ Govt Job' : opp.type === 'loan' ? '💰 Education Loan' : opp.type === 'interest-subsidy' ? '💸 Interest Subsidy' : opp.type === 'financial-aid' ? '🏦 Financial Aid' : '🎓 Scholarship'}\n`;
+      if (opp.status) msg += `   Status: ${opp.status}\n`;
       msg += `   Deadline: ${opp.deadline}\n\n`;
     });
     msg += `👉 Apply now at: https://vidyasuddhi.com`;
@@ -491,7 +501,7 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
                 <div className="flex flex-wrap items-center gap-2">
                   <button onClick={handleShareWhatsApp}
                     className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-xs shadow-sm whitespace-nowrap">
-                    <span>Share Today's Listings on WhatsApp</span>
+                    <span>Share New Updates on WhatsApp</span>
                   </button>
                   <button onClick={openAddForm}
                     className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-sm whitespace-nowrap">
