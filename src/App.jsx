@@ -6,17 +6,21 @@ import FilterBar from './components/FilterBar';
 import OpportunityCard from './components/OpportunityCard';
 import OpportunityModal from './components/OpportunityModal';
 import AdminModal from './components/AdminModal';
+import AdminPage from './components/AdminPage';
 import NewsletterModal from './components/NewsletterModal';
 import AuthModal from './components/AuthModal';
 import ResumeMatcherModal from './components/ResumeMatcherModal';
 import BotSimulatorModal from './components/BotSimulatorModal';
-import BookmarksView from './components/BookmarksView';
 import Footer from './components/Footer';
 import WhatsAppFloat from './components/WhatsAppFloat';
+import DeadlineReminder from './components/DeadlineReminder';
+import { fetchAdminOpportunities, fetchAdminNotifications, saveAdminOpportunity, removeAdminOpportunity, saveAdminNotification, removeAdminNotification, signInAdmin, signOutAdmin } from './services/adminService';
 import { initialOpportunities } from './data/mockData';
 import { Sparkles } from 'lucide-react';
 
 export default function App() {
+  const isAdminPage = window.location.pathname === '/admin';
+
   // Opportunities State (Initial Mock + LocalStorage Custom Admin Posts)
   const [opportunities, setOpportunities] = useState(() => {
     const saved = localStorage.getItem('vidyasuddhi_custom_opportunities');
@@ -30,6 +34,7 @@ export default function App() {
     }
     return initialOpportunities;
   });
+  const [notifications, setNotifications] = useState(() => JSON.parse(localStorage.getItem('vidyasuddhi_notifications') || '[]'));
 
   // User Profile & Authentication State
   const [user, setUser] = useState(() => {
@@ -58,7 +63,7 @@ export default function App() {
   });
 
   // Navigation & Filter States
-  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'jobs' | 'scholarships' | 'bookmarks'
+  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'jobs' | 'scholarships'
   const [activeTypeTab, setActiveTypeTab] = useState('all'); // 'all' | 'job' | 'scholarship'
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
@@ -72,12 +77,57 @@ export default function App() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isResumeMatcherOpen, setIsResumeMatcherOpen] = useState(false);
   const [isBotSimulatorOpen, setIsBotSimulatorOpen] = useState(false);
+  const [adminDataError, setAdminDataError] = useState('');
 
   // Dark Mode State
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('vidyasuddhi_dark_mode');
     return saved ? JSON.parse(saved) : true;
   });
+
+  // Deadline Reminders State
+  const [showReminder, setShowReminder] = useState(false);
+  const [reminderItems, setReminderItems] = useState([]);
+
+  // Check for upcoming deadlines
+  useEffect(() => {
+    const checkDeadlines = () => {
+      const now = new Date();
+      const in5Days = new Date();
+      in5Days.setDate(now.getDate() + 5);
+      
+      const upcoming = opportunities.filter(item => {
+        const itemDate = new Date(item.deadline);
+        return itemDate >= now && itemDate <= in5Days;
+      });
+
+      if (upcoming.length > 0) {
+        setReminderItems(upcoming);
+        setTimeout(() => {
+          setShowReminder(true);
+        }, 2000);
+      }
+    };
+    
+    checkDeadlines();
+  }, [opportunities]);
+
+  useEffect(() => {
+    const loadAdminData = async () => {
+      try {
+        const [remoteOpportunities, remoteNotifications] = await Promise.all([fetchAdminOpportunities(), fetchAdminNotifications()]);
+        if (remoteOpportunities) setOpportunities(remoteOpportunities);
+        if (remoteNotifications) setNotifications(remoteNotifications);
+      } catch (error) {
+        setAdminDataError('Could not sync with the database. Local data is still available.');
+      }
+    };
+    loadAdminData();
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('vidyasuddhi_notifications', JSON.stringify(notifications));
+  }, [notifications]);
 
   // Dark Mode Sync
   useEffect(() => {
@@ -129,6 +179,7 @@ export default function App() {
     setOpportunities(prev => [newOpportunity, ...prev]);
     const currentCustom = JSON.parse(localStorage.getItem('vidyasuddhi_custom_opportunities') || '[]');
     localStorage.setItem('vidyasuddhi_custom_opportunities', JSON.stringify([newOpportunity, ...currentCustom]));
+    saveAdminOpportunity(newOpportunity).catch(() => setAdminDataError('Listing saved locally, but database sync failed.'));
   };
 
   // Edit Opportunity via Admin Modal
@@ -138,6 +189,7 @@ export default function App() {
     const currentCustom = JSON.parse(localStorage.getItem('vidyasuddhi_custom_opportunities') || '[]');
     const updatedCustom = currentCustom.map(item => item.id === updatedItem.id ? updatedItem : item);
     localStorage.setItem('vidyasuddhi_custom_opportunities', JSON.stringify(updatedCustom));
+    saveAdminOpportunity(updatedItem).catch(() => setAdminDataError('Listing updated locally, but database sync failed.'));
   };
 
   // Delete Opportunity via Admin Modal
@@ -145,6 +197,17 @@ export default function App() {
     setOpportunities(prev => prev.filter(item => item.id !== itemId));
     const currentCustom = JSON.parse(localStorage.getItem('vidyasuddhi_custom_opportunities') || '[]');
     localStorage.setItem('vidyasuddhi_custom_opportunities', JSON.stringify(currentCustom.filter(item => item.id !== itemId)));
+    removeAdminOpportunity(itemId).catch(() => setAdminDataError('Listing deleted locally, but database sync failed.'));
+  };
+
+  const handleAddNotification = (notification) => {
+    setNotifications(prev => [notification, ...prev]);
+    saveAdminNotification(notification).catch(() => setAdminDataError('Notification saved locally, but database sync failed.'));
+  };
+
+  const handleDeleteNotification = (notificationId) => {
+    setNotifications(prev => prev.filter(item => item.id !== notificationId));
+    removeAdminNotification(notificationId).catch(() => setAdminDataError('Notification deleted locally, but database sync failed.'));
   };
 
   // Quick Tag Select Handler + auto-scroll to results
@@ -214,19 +277,34 @@ export default function App() {
   const jobCount = opportunities.filter(i => i.type === 'job').length;
   const scholarshipCount = opportunities.filter(i => i.type === 'scholarship').length;
 
+  if (isAdminPage) {
+    return (
+      <AdminPage
+        opportunities={opportunities}
+        onAddOpportunity={handleAddOpportunity}
+        onEditOpportunity={handleEditOpportunity}
+        onDeleteOpportunity={handleDeleteOpportunity}
+        notifications={notifications}
+        onAddNotification={handleAddNotification}
+        onDeleteNotification={handleDeleteNotification}
+        onAdminLogin={signInAdmin}
+        onAdminLogout={signOutAdmin}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-stone-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200">
       
       {/* Top Navbar */}
       <Navbar
-        bookmarkCount={bookmarks.length}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         userRole={userRole}
         setUserRole={setUserRole}
         user={user}
         onOpenAuth={() => setIsAuthOpen(true)}
-        onOpenAdmin={() => setIsAdminOpen(true)}
+        onOpenAdmin={() => { window.location.href = '/admin'; }}
         onOpenResumeMatcher={() => {
           if (!user) {
             setIsAuthOpen(true);
@@ -242,89 +320,80 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-grow">
         
-        {activeTab === 'bookmarks' ? (
-          <BookmarksView
-            bookmarkedItems={bookmarkedItemsList}
-            onToggleBookmark={handleToggleBookmark}
-            onSelect={(item) => setSelectedItem(item)}
-            onBackToFeed={() => setActiveTab('all')}
+        <>
+          {/* Hero Section */}
+          <Hero
+            searchKeyword={searchKeyword}
+            setSearchKeyword={setSearchKeyword}
+            onSelectQuickFilter={handleSelectQuickFilter}
+            onOpenResumeMatcher={() => {
+              if (!user) {
+                setIsAuthOpen(true);
+              } else {
+                setIsResumeMatcherOpen(true);
+              }
+            }}
+            user={user}
+            onOpenAuth={() => setIsAuthOpen(true)}
           />
-        ) : (
-          <>
-            {/* Hero Section */}
-            <Hero
-              searchKeyword={searchKeyword}
-              setSearchKeyword={setSearchKeyword}
-              onSelectQuickFilter={handleSelectQuickFilter}
-              onOpenResumeMatcher={() => {
-                if (!user) {
-                  setIsAuthOpen(true);
-                } else {
-                  setIsResumeMatcherOpen(true);
-                }
-              }}
-              user={user}
-              onOpenAuth={() => setIsAuthOpen(true)}
-            />
 
-            {/* Metrics Banner */}
-            <StatsBanner
-              totalCount={opportunities.length}
-              jobCount={jobCount}
-              scholarshipCount={scholarshipCount}
-            />
+          {/* Metrics Banner */}
+          <StatsBanner
+            totalCount={opportunities.length}
+            jobCount={jobCount}
+            scholarshipCount={scholarshipCount}
+          />
 
-            {/* Smart Filters Bar */}
-            <FilterBar
-              activeTypeTab={activeTypeTab}
-              setActiveTypeTab={setActiveTypeTab}
-              selectedCategory={selectedCategory}
-              setSelectedCategory={setSelectedCategory}
-              selectedQualification={selectedQualification}
-              setSelectedQualification={setSelectedQualification}
-              urgencyFilter={urgencyFilter}
-              setUrgencyFilter={setUrgencyFilter}
-              onResetFilters={handleResetFilters}
-              resultCount={filteredOpportunities.length}
-            />
+          {/* Smart Filters Bar */}
+          <FilterBar
+            activeTypeTab={activeTypeTab}
+            setActiveTypeTab={setActiveTypeTab}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+            selectedQualification={selectedQualification}
+            setSelectedQualification={setSelectedQualification}
+            urgencyFilter={urgencyFilter}
+            setUrgencyFilter={setUrgencyFilter}
+            onResetFilters={handleResetFilters}
+            resultCount={filteredOpportunities.length}
+          />
 
-            {/* Opportunities Cards Grid */}
-            <div id="results-grid" ref={resultsRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-              
-              {filteredOpportunities.length === 0 ? (
-                <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm">
-                  <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-slate-400">
-                    <Sparkles className="w-6 h-6 text-amber-500" />
-                  </div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">No Opportunities Match Your Current Search</h3>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto mb-4">
-                    Try clearing your search keyword or switching your qualification filter to "All Qualifications".
-                  </p>
-                  <button
-                    onClick={handleResetFilters}
-                    className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-sm"
-                  >
-                    Reset All Search Filters
-                  </button>
+          {/* Opportunities Cards Grid */}
+          <div id="results-grid" ref={resultsRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+            
+            {filteredOpportunities.length === 0 ? (
+              <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm">
+                <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-slate-400">
+                  <Sparkles className="w-6 h-6 text-amber-500" />
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredOpportunities.map((item) => (
-                    <OpportunityCard
-                      key={item.id}
-                      item={item}
-                      isBookmarked={bookmarks.includes(item.id)}
-                      onToggleBookmark={handleToggleBookmark}
-                      onSelect={(opp) => setSelectedItem(opp)}
-                      user={user}
-                    />
-                  ))}
-                </div>
-              )}
+                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">No Opportunities Match Your Current Search</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto mb-4">
+                  Try clearing your search keyword or switching your qualification filter to "All Qualifications".
+                </p>
+                <button
+                  onClick={handleResetFilters}
+                  className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-sm"
+                >
+                  Reset All Search Filters
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredOpportunities.map((item) => (
+                  <OpportunityCard
+                    key={item.id}
+                    item={item}
+                    isBookmarked={bookmarks.includes(item.id)}
+                    onToggleBookmark={handleToggleBookmark}
+                    onSelect={(opp) => setSelectedItem(opp)}
+                    user={user}
+                  />
+                ))}
+              </div>
+            )}
 
-            </div>
-          </>
-        )}
+          </div>
+        </>
 
       </main>
 
@@ -334,8 +403,17 @@ export default function App() {
       <Footer
         onOpenDocs={() => {}}
         onOpenNewsletter={() => setIsNewsletterOpen(true)}
-        onOpenAdmin={() => setIsAdminOpen(true)}
+        onOpenAdmin={() => { window.location.href = '/admin'; }}
       />
+
+      {/* Deadline Reminder */}
+      {showReminder && (
+        <DeadlineReminder
+          items={reminderItems}
+          onDismiss={() => setShowReminder(false)}
+          onSelectItem={(item) => setSelectedItem(item)}
+        />
+      )}
 
       {/* Modals & Slide-overs */}
       <OpportunityModal
@@ -354,6 +432,11 @@ export default function App() {
         onAddOpportunity={handleAddOpportunity}
         onEditOpportunity={handleEditOpportunity}
         onDeleteOpportunity={handleDeleteOpportunity}
+        notifications={notifications}
+        onAddNotification={handleAddNotification}
+        onDeleteNotification={handleDeleteNotification}
+        onAdminLogin={signInAdmin}
+        onAdminLogout={signOutAdmin}
       />
 
       <AuthModal
@@ -363,6 +446,12 @@ export default function App() {
         onLogin={(u) => setUser(u)}
         onRegister={(u) => setUser(u)}
         onLogout={() => setUser(null)}
+        bookmarkedItems={bookmarkedItemsList}
+        onToggleBookmark={handleToggleBookmark}
+        onSelectItem={(item) => { 
+          setIsAuthOpen(false); 
+          setTimeout(() => setSelectedItem(item), 200); 
+        }}
       />
 
       <ResumeMatcherModal

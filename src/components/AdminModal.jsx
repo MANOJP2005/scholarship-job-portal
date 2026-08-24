@@ -1,8 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { X, PlusCircle, CheckCircle, ShieldCheck, Lock, Eye, EyeOff, Pencil, Trash2, Search, ArrowLeft, AlertTriangle } from 'lucide-react';
+import { X, PlusCircle, CheckCircle, ShieldCheck, Lock, Eye, EyeOff, Pencil, Trash2, Search, ArrowLeft, AlertTriangle, LayoutDashboard, BriefcaseBusiness, GraduationCap, Bell, Send } from 'lucide-react';
 import { categoryOptions, qualificationOptions } from '../data/mockData';
-
-const ADMIN_PASSWORD = 'vidyasuddhi2026';
 
 const emptyForm = {
   title: '', type: 'job', category: 'RRB Railway', organization: '',
@@ -11,12 +9,13 @@ const emptyForm = {
   officialUrl: '', pdfUrl: '', description: '',
 };
 
-export default function AdminModal({ isOpen, onClose, opportunities, onAddOpportunity, onEditOpportunity, onDeleteOpportunity }) {
+export default function AdminModal({ isOpen, onClose, opportunities, onAddOpportunity, onEditOpportunity, onDeleteOpportunity, notifications = [], onAddNotification, onDeleteNotification, onAdminLogin, onAdminLogout, pageMode = false }) {
   // Auth
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
     return sessionStorage.getItem('vidyasuddhi_admin_session') === 'true';
   });
   const [adminPasswordInput, setAdminPasswordInput] = useState('');
+  const [adminEmailInput, setAdminEmailInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [adminError, setAdminError] = useState('');
 
@@ -27,6 +26,8 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
   const [submitted, setSubmitted] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeSection, setActiveSection] = useState('overview');
+  const [notificationForm, setNotificationForm] = useState({ title: '', message: '', audience: 'All Students' });
 
   if (!isOpen) return null;
 
@@ -35,22 +36,29 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
     const q = searchQuery.toLowerCase();
     return item.title.toLowerCase().includes(q) || item.organization.toLowerCase().includes(q) || item.category.toLowerCase().includes(q);
   });
+  const sectionOpps = activeSection === 'jobs' ? filteredOpps.filter(item => item.type === 'job') : activeSection === 'scholarships' ? filteredOpps.filter(item => item.type === 'scholarship') : filteredOpps;
 
-  const handleAdminLogin = (e) => {
+  const handleAdminLogin = async (e) => {
     e.preventDefault();
-    if (adminPasswordInput === ADMIN_PASSWORD) {
+    if (onAdminLogin) {
+      const result = await onAdminLogin(adminEmailInput, adminPasswordInput);
+      if (result?.error) {
+        setAdminError(result.error.message || 'Unable to sign in.');
+        return;
+      }
       setIsAdminAuthenticated(true);
       sessionStorage.setItem('vidyasuddhi_admin_session', 'true');
       setAdminError('');
-    } else {
-      setAdminError('Incorrect admin password.');
+      return;
     }
+    setAdminError('Administrator authentication is not configured.');
   };
 
   const handleAdminLogout = () => {
     setIsAdminAuthenticated(false);
     sessionStorage.removeItem('vidyasuddhi_admin_session');
     setAdminPasswordInput('');
+    onAdminLogout?.();
     onClose();
   };
 
@@ -122,6 +130,14 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
     onDeleteOpportunity(item.id);
     setDeleteConfirm(null);
     setSubmitted('Listing Deleted.');
+    setTimeout(() => setSubmitted(''), 1200);
+  };
+
+  const handleNotificationSubmit = (e) => {
+    e.preventDefault();
+    onAddNotification?.({ id: `notification-${Date.now()}`, ...notificationForm, createdAt: new Date().toISOString() });
+    setNotificationForm({ title: '', message: '', audience: 'All Students' });
+    setSubmitted('Notification Published Successfully!');
     setTimeout(() => setSubmitted(''), 1200);
   };
   
@@ -236,15 +252,15 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
   );
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fadeIn">
-      <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
+    <div className={`${pageMode ? 'min-h-screen bg-stone-50 dark:bg-slate-800' : 'fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-md flex items-center justify-center p-3 sm:p-6'} animate-fadeIn`}>
+      <div className={`relative w-full ${pageMode ? 'max-w-7xl min-h-screen' : 'max-w-3xl max-h-[90vh] rounded-3xl'} mx-auto bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col`}>
 
         {/* Header */}
         <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-800 to-slate-900 text-white flex items-center justify-between flex-shrink-0">
           <div className="flex items-center space-x-2">
             <ShieldCheck className="w-5 h-5 text-amber-400" />
             <h3 className="text-sm sm:text-base font-bold">
-              {!isAdminAuthenticated ? 'Admin Login' : view === 'dashboard' ? 'Admin Dashboard' : view === 'add' ? 'Add New Listing' : 'Edit Listing'}
+              {pageMode ? 'VIDYASUDDHI ADMIN CONSOLE' : !isAdminAuthenticated ? 'Admin Login' : view === 'dashboard' ? 'Admin Dashboard' : view === 'add' ? 'Add New Listing' : 'Edit Listing'}
             </h3>
           </div>
           <div className="flex items-center space-x-2">
@@ -253,12 +269,12 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
                 Logout
               </button>
             )}
-            <button onClick={onClose} className="p-1 rounded-full hover:bg-white/20 text-white"><X className="w-5 h-5" /></button>
+            <button onClick={onClose} title={pageMode ? 'Back to portal' : 'Close'} className="p-1 rounded-full hover:bg-white/20 text-white"><X className="w-5 h-5" /></button>
           </div>
         </div>
 
         {/* Body */}
-        <div className="p-5 sm:p-6 overflow-y-auto flex-1">
+        <div className={`${pageMode ? 'p-4 sm:p-8 lg:p-10' : 'p-5 sm:p-6'} overflow-y-auto flex-1`}>
 
           {/* Password Gate */}
           {!isAdminAuthenticated ? (
@@ -266,12 +282,14 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
               <div className="text-center space-y-2">
                 <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center mx-auto"><Lock className="w-7 h-7" /></div>
                 <h4 className="text-base font-bold text-slate-900 dark:text-white">Admin Access Required</h4>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">Enter the admin password to manage listings.</p>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">Sign in with your authorized administrator account to manage the portal.</p>
               </div>
               {adminError && (
                 <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs font-semibold text-center">{adminError}</div>
               )}
               <form onSubmit={handleAdminLogin} className="space-y-3 max-w-sm mx-auto">
+                <input type="email" required placeholder="Admin email" value={adminEmailInput} onChange={(e) => { setAdminEmailInput(e.target.value); setAdminError(''); }}
+                  className="w-full p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs" />
                 <div className="relative">
                   <input type={showPassword ? 'text' : 'password'} required placeholder="Enter admin password" value={adminPasswordInput}
                     onChange={(e) => { setAdminPasswordInput(e.target.value); setAdminError(''); }}
@@ -280,7 +298,7 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                <button type="submit" className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md">Unlock Admin Portal</button>
+                <button type="submit" className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md">Sign In Securely</button>
               </form>
             </div>
 
@@ -304,7 +322,53 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
             /* Dashboard — List all opportunities */
             <div className="space-y-4">
 
-              {/* Top Bar */}
+              {pageMode && (
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-5">
+                  <div><p className="text-[11px] font-bold uppercase tracking-widest text-amber-600">Control Center</p><h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-1">Manage Student Opportunities</h1><p className="text-xs text-slate-500 mt-1">Publish verified jobs, scholarships, and alerts from one workspace.</p></div>
+                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">Administrator access active</span>
+                </div>
+              )}
+
+              {pageMode && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900"><p className="text-[11px] text-amber-700 dark:text-amber-400 font-semibold">Total listings</p><p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{opportunities.length}</p></div>
+                  <div className="p-4 rounded-2xl bg-sky-50 dark:bg-sky-950/30 border border-sky-100 dark:border-sky-900"><p className="text-[11px] text-sky-700 dark:text-sky-400 font-semibold">Job notifications</p><p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{opportunities.filter(item => item.type === 'job').length}</p></div>
+                  <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900"><p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">Scholarships</p><p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{opportunities.filter(item => item.type === 'scholarship').length}</p></div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  ['overview', 'Overview', LayoutDashboard],
+                  ['jobs', 'Job Notifications', BriefcaseBusiness],
+                  ['scholarships', 'Scholarships', GraduationCap],
+                  ['notifications', 'Broadcasts', Bell],
+                ].map(([key, label, Icon]) => (
+                  <button key={key} onClick={() => setActiveSection(key)} className={`flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-[10px] sm:text-xs font-bold border transition-colors ${activeSection === key ? 'bg-amber-600 text-white border-amber-600' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-amber-400'}`}>
+                    <Icon className="w-3.5 h-3.5" />{label}
+                  </button>
+                ))}
+              </div>
+
+              {activeSection === 'notifications' ? (
+                <div className="space-y-4">
+                  <form onSubmit={handleNotificationSubmit} className="p-4 rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/20 space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white"><Send className="w-4 h-4 text-amber-600" />Create job or scholarship alert</div>
+                    <input required placeholder="Notification title" value={notificationForm.title} onChange={(e) => setNotificationForm({ ...notificationForm, title: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs" />
+                    <textarea required rows="3" placeholder="Write the alert message..." value={notificationForm.message} onChange={(e) => setNotificationForm({ ...notificationForm, message: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs" />
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <select value={notificationForm.audience} onChange={(e) => setNotificationForm({ ...notificationForm, audience: e.target.value })} className="flex-1 p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"><option>All Students</option><option>Job Seekers</option><option>Scholarship Applicants</option></select>
+                      <button type="submit" className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs">Publish Alert</button>
+                    </div>
+                  </form>
+                  {notifications.length === 0 ? <p className="text-center text-xs text-slate-500 py-8">No notifications published yet.</p> : notifications.map((notification) => (
+                    <div key={notification.id} className="flex items-start justify-between gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                      <div><p className="text-xs font-bold text-slate-900 dark:text-white">{notification.title}</p><p className="text-[11px] text-slate-500 mt-1">{notification.message}</p><span className="text-[10px] text-amber-700 dark:text-amber-400">{notification.audience}</span></div>
+                      <button onClick={() => onDeleteNotification?.(notification.id)} title="Delete notification" className="p-1.5 text-slate-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                    </div>
+                  ))}
+                </div>
+              ) : (<div className="space-y-4">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div className="relative flex-1">
                   <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
@@ -323,7 +387,7 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
                 </div>
               </div>
 
-              <p className="text-[11px] text-slate-500 font-medium">{filteredOpps.length} listing{filteredOpps.length !== 1 ? 's' : ''} total</p>
+              <p className="text-[11px] text-slate-500 font-medium">{sectionOpps.length} {activeSection === 'jobs' ? 'job notification' : activeSection === 'scholarships' ? 'scholarship' : 'listing'}{sectionOpps.length !== 1 ? 's' : ''} total</p>
 
               {/* Delete Confirmation */}
               {deleteConfirm && (
@@ -342,7 +406,7 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
 
               {/* Listings Table */}
               <div className="space-y-2">
-                {filteredOpps.map((item) => (
+                {sectionOpps.map((item) => (
                   <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group">
                     <div className="flex-1 min-w-0 pr-3">
                       <div className="flex items-center space-x-2">
@@ -366,6 +430,8 @@ export default function AdminModal({ isOpen, onClose, opportunities, onAddOpport
                   </div>
                 ))}
               </div>
+
+              </div>)}
 
             </div>
           )}
