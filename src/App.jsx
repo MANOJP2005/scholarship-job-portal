@@ -276,6 +276,9 @@ export default function App() {
       // Type Filter
       if (activeTab === 'jobs' && item.type !== 'job') return false;
       if (activeTab === 'scholarships' && item.type !== 'scholarship') return false;
+      if (activeTab === 'loans' && item.type !== 'loan') return false;
+      if (activeTab === 'interest-subsidy' && item.type !== 'interest-subsidy') return false;
+      if (activeTab === 'financial-aid' && item.type !== 'financial-aid') return false;
       if (activeTypeTab === 'job' && item.type !== 'job') return false;
       if (activeTypeTab === 'scholarship' && item.type !== 'scholarship') return false;
       if (activeTypeTab === 'loan' && item.type !== 'loan') return false;
@@ -347,7 +350,10 @@ export default function App() {
       {/* Top Navbar */}
       <Navbar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={(tab) => {
+          setActiveTab(tab);
+          setActiveTypeTab(tab === 'jobs' ? 'job' : tab === 'scholarships' ? 'scholarship' : tab === 'loans' ? 'loan' : tab === 'interest-subsidy' ? 'interest-subsidy' : tab === 'financial-aid' ? 'financial-aid' : 'all');
+        }}
         userRole={userRole}
         setUserRole={setUserRole}
         user={user}

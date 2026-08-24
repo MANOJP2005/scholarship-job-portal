@@ -54,6 +54,9 @@ export default function Navbar({
             { key: 'all', label: 'Explore All' },
             { key: 'jobs', label: 'Govt Jobs' },
             { key: 'scholarships', label: 'Scholarships' },
+            { key: 'loans', label: 'Education Loans' },
+            { key: 'interest-subsidy', label: 'Interest Subsidy' },
+            { key: 'financial-aid', label: 'Financial Aid' },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -144,6 +147,9 @@ export default function Navbar({
               { key: 'all', label: 'Explore All' },
               { key: 'jobs', label: 'Govt Jobs (RRB / Banking / SSC)' },
               { key: 'scholarships', label: 'Scholarships' },
+              { key: 'loans', label: 'Education Loans' },
+              { key: 'interest-subsidy', label: 'Interest Subsidy' },
+              { key: 'financial-aid', label: 'Financial Aid' },
             ].map((t) => (
               <button
                 key={t.key}
