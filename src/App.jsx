@@ -134,7 +134,10 @@ export default function App() {
     const loadAdminData = async () => {
       try {
         const [remoteOpportunities, remoteNotifications] = await Promise.all([fetchAdminOpportunities(), fetchAdminNotifications()]);
-        if (remoteOpportunities) setOpportunities(remoteOpportunities);
+        if (remoteOpportunities) {
+          const remoteById = new Map(remoteOpportunities.map(item => [item.id, item]));
+          setOpportunities([...defaultOpportunities.map(item => remoteById.get(item.id) || item), ...remoteOpportunities.filter(item => !defaultOpportunities.some(defaultItem => defaultItem.id === item.id))]);
+        }
         if (remoteNotifications) setNotifications(remoteNotifications);
       } catch (error) {
         setAdminDataError('Could not sync with the database. Local data is still available.');
