@@ -13,6 +13,10 @@ The platform is designed with separate access for:
 
 Students can register and securely sign in using their credentials, while administrators have dedicated access to manage jobs, scholarships, and important portal information.
 
+## 🔗 Live Demo
+
+🌐 **[View Live Demo](https://scholarship-job-portal-hoyx-2361ahnl8.vercel.app/)**
+
 ## ✨ Features
 
 ### 👨‍🎓 Student Portal
